@@ -33,41 +33,15 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   @override
   bool get wantKeepAlive => true;
 
-        Widget _createAvatarBtn({bool isRight = true}) =>
+          Widget _createAvatarBtn({bool isRight = true}) =>
       Container(
         width: 34,
         height: 34,
         margin: isRight ? const .only(right: 16) : const .only(left: 16),
         child: GestureDetector(
           onTap: () {
-            // 直接用你底栏的顺序，如果你的底栏有“动态”和“我的”，那“我的”通常索引是 1 或者找不到的情况
-            final idx = _mainController.navigationBars.indexWhere(
-              (e) => e.label == '我的' || e == NavigationBarType.mine,
-            );
-            
-            if (idx != -1) {
-              // 1. 强制修改底栏高亮
-              _mainController.selectedIndex.value = idx;
-              
-              // 2. 强制滑过去
-              if (_mainController.controller.hasClients) {
-                _mainController.controller.jumpToPage(idx);
-              }
-              
-              // 3. 延迟100毫秒再滑一次，防止被隐藏底栏的动画重置
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (_mainController.controller.hasClients) {
-                  _mainController.controller.jumpToPage(idx);
-                }
-              });
-            } else {
-              // 如果找不到“我的”，直接跳到最后一个页面（通常“我的”在最后）
-              final lastIdx = _mainController.navigationBars.length - 1;
-              _mainController.selectedIndex.value = lastIdx;
-              if (_mainController.controller.hasClients) {
-                _mainController.controller.jumpToPage(lastIdx);
-              }
-            }
+            // 直接调用主控制器里现成的方法，它会自动处理页面滑动和底栏状态
+            _mainController.toMinePage();
           },
           behavior: HitTestBehavior.opaque, // 确保点击百分百触发
           child: PendantAvatar(
