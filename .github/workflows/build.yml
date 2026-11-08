@@ -85,15 +85,24 @@ jobs:
         shell: pwsh
         run: lib/scripts/build.ps1 android
 
-      # ================= 新增：替换为腾讯云镜像 =================
+      # ================= 修复 Gradle 下载 =================
       - name: Fix Gradle Distribution URL
         run: |
-          # 尝试替换两种可能出现的官方地址为腾讯云镜像
           sed -i 's|https://services.gradle.org/distributions/|https://mirrors.cloud.tencent.com/gradle/|g' android/gradle/wrapper/gradle-wrapper.properties
           sed -i 's|https://github.com/gradle/gradle-distributions/releases/download/v[0-9.]*/|https://mirrors.cloud.tencent.com/gradle/|g' android/gradle/wrapper/gradle-wrapper.properties
           echo "当前 Gradle 下载地址："
           grep distributionUrl android/gradle/wrapper/gradle-wrapper.properties
-      # ==========================================================
+
+      # ================= 修复 MediaKit 的 jar 包下载 =================
+      - name: Fix MediaKit Download URL
+        run: |
+          echo "正在拉取依赖..."
+          flutter pub get
+          echo "查找 media_kit 的 build.gradle 并替换 GitHub 下载源为加速代理..."
+          # 使用 ghfast.top 代理加速 GitHub Releases 下载
+          find ~/.pub-cache -name "build.gradle" -exec sed -i 's|https://github.com/My-Responsitories|https://ghfast.top/https://github.com/My-Responsitories|g' {} +
+          echo "替换完成，当前下载地址示例："
+          grep -r "default-arm64-v8a.jar" ~/.pub-cache/git/ | head -n 1 || true
 
       - name: Flutter Build Release Apk (With Auto-Retry)
         if: ${{ github.event_name == 'workflow_dispatch' }}
