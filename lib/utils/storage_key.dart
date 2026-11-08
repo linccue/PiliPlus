@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
 abstract final class SettingBoxKey {
+    static const enableDebugDialog = 'enableDebugDialog';
   static const blockInaccessibleDynamics = 'blockInaccessibleDynamics';
 static const blockAdJumpDynamics = 'blockAdJumpDynamics';
 static const blockLiveReminderDynamics = 'blockLiveReminderDynamics';
