@@ -230,7 +230,7 @@ class DynamicsDataModel {
       }
       // filtered all
        // ===== 临时调试：弹窗显示收集到的字段 =====
-      if (debugBuffer.isNotEmpty) {
+       if (Pref.enableDebugDialog && debugBuffer.isNotEmpty) { 
         SmartDialog.show(
           builder: (context) => AlertDialog(
             title: const Text('充电视频调试信息'),
