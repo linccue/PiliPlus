@@ -47,37 +47,48 @@ class DynamicsDataModel {
 
   static bool antiGoodsDyn = Pref.antiGoodsDyn;
 
-  // 1. 无权查看 / 充电专属
+    // 1. 无权查看 / 充电专属
   static bool _isInaccessibleDyn(DynamicItemModel item) {
     final type = item.type;
+    // 顶层类型直接匹配
     if (type == 'DYNAMIC_TYPE_SUBSCRIPTION' ||
         type == 'DYNAMIC_TYPE_SUBSCRIPTION_NEW') {
       return true;
     }
 
+    // 不可见 / 被屏蔽的占位卡片
     if (item.visible == false) return true;
     if (item.modules.moduleBlocked != null) return true;
 
     final major = item.modules.moduleDynamic?.major;
     if (major != null) {
-      final majorType = major.type;
-      if (majorType == 'MAJOR_TYPE_SUBSCRIPTION' ||
-          majorType == 'MAJOR_TYPE_SUBSCRIPTION_NEW' ||
-          majorType == 'MAJOR_TYPE_UPOWER_COMMON') {
+      // 充电专属动态卡片
+      if (major.type == 'MAJOR_TYPE_SUBSCRIPTION' ||
+          major.type == 'MAJOR_TYPE_SUBSCRIPTION_NEW' ||
+          major.type == 'MAJOR_TYPE_UPOWER_COMMON') {
         return true;
       }
       if (major.blocked != null || major.subscriptionNew != null) return true;
+
+      // 关键补充：检查视频稿件卡片的角标（badge）
+      // 覆盖“视频本身是充电专属”的情况
+      final badgeText = major.archive?.badge?.text;
+      if (badgeText != null &&
+          (badgeText.contains('充电') || badgeText.contains('专属'))) {
+        return true;
+      }
     }
 
+    // 充电专属抽奖卡片
     final additional = item.modules.moduleDynamic?.additional;
     if (additional?.type == 'ADDITIONAL_TYPE_UPOWER_LOTTERY') return true;
     if (additional?.upowerLottery != null) return true;
 
+    // 如果是转发，递归检查原动态
     if (item.orig != null && _isInaccessibleDyn(item.orig!)) return true;
 
     return false;
   }
-
   // 2. 跳转广告
   static bool _isAdJumpDyn(DynamicItemModel item) {
     final type = item.type;
