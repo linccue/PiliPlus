@@ -49,7 +49,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           },
           customBorder: const CircleBorder(),
           child: PendantAvatar(
-            face: Accounts.main.face ?? '',
+            Accounts.main.face ?? '', // 修复：去掉了 face: 直接传位置参数
             size: 34,
           ),
         ),
@@ -154,7 +154,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
         leading = const DrawerButton();
       case .rightDrawer:
         endDrawer = upPanelPart(colorScheme);
-        leading = _createAvatarBtn(isRight: false); // 左上角头像
+        leading = _createAvatarBtn(isRight: false);
         actions = const EndDrawerButton();
     }
 
@@ -188,7 +188,10 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
                       indicatorColor: colorScheme.primary,
                       controller: _dynamicsController.tabController,
                       unselectedLabelColor: colorScheme.onSurface,
-                      labelStyle: TabBarTheme.of(context).labelStyle?.copyWith(fontSize: 13) ?? const TextStyle(fontSize: 13),
+                      labelStyle:
+                          TabBarTheme.of(context).labelStyle
+                              ?.copyWith(fontSize: 13) ??
+                          const TextStyle(fontSize: 13),
                       tabs: tabTypes.map((e) => Tab(text: e.label)).toList(),
                       onTap: (index) {
                         if (!_dynamicsController.tabController.indexIsChanging) {
@@ -207,10 +210,8 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (checkPage) return false;
-          // 只处理垂直列表的更新通知
           if (notification.depth == 0 && notification is ScrollUpdateNotification) {
             if (notification.metrics.axis == Axis.vertical) {
-              // 向下滑动隐藏，向上滑动显示
               if (notification.scrollDelta != null && notification.scrollDelta! > 0 && !_hideAppBar) {
                 setState(() => _hideAppBar = true);
               } else if (notification.scrollDelta != null && notification.scrollDelta! < 0 && _hideAppBar) {
