@@ -223,8 +223,17 @@ static bool get blockAdJumpDynamics =>
 static bool get blockLiveReminderDynamics =>
     GStorage.setting.get(SettingBoxKey.blockLiveReminderDynamics, defaultValue: false);
 
-static bool get blockPromotedDynamics =>
-    GStorage.setting.get(SettingBoxKey.blockPromotedDynamics, defaultValue: false);
+
+      static bool get blockInaccessibleDynamics =>
+      GStorage.setting.get(SettingBoxKey.blockInaccessibleDynamics, defaultValue: false);
+  static bool get blockAdJumpDynamics =>
+      GStorage.setting.get(SettingBoxKey.blockAdJumpDynamics, defaultValue: false);
+  static bool get blockLiveReminderDynamics =>
+      GStorage.setting.get(SettingBoxKey.blockLiveReminderDynamics, defaultValue: false);
+  static bool get blockPromotedDynamics =>
+      GStorage.setting.get(SettingBoxKey.blockPromotedDynamics, defaultValue: false);
+  static bool get blockForwardDynamics =>
+      GStorage.setting.get(SettingBoxKey.blockForwardDynamics, defaultValue: false);
   static SubtitlePrefType get subtitlePreferenceV2 =>
       SubtitlePrefType.values[_setting.get(
         SettingBoxKey.subtitlePreferenceV2,
