@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamics_type.dart';
 import 'package:PiliPlus/models/dynamics/article_content_model.dart';
@@ -153,11 +155,29 @@ class DynamicsDataModel {
 
     List? list = json['items'] as List?;
     if (list != null && list.isNotEmpty) {
+      final debugBuffer = StringBuffer();
       items = <DynamicItemModel>[];
       late final filterBan =
           type != DynamicsTabType.up && tempBannedList?.isNotEmpty == true;
       for (final e in list) {
         DynamicItemModel item = DynamicItemModel.fromJson(e);
+        // ===== 临时调试：收集充电相关动态的字段 =====
+        final dbgArchive = item.modules.moduleDynamic?.major?.archive;
+        if (dbgArchive != null &&
+            (dbgArchive.badge?.text?.contains('抢先看') == true ||
+                dbgArchive.badge?.text?.contains('充电') == true ||
+                dbgArchive.isUpowerExclusive != null ||
+                dbgArchive.isUpowerPlay != null)) {
+          debugBuffer.writeln('type: ${item.type}');
+          debugBuffer.writeln(
+              'majorType: ${item.modules.moduleDynamic?.major?.type}');
+          debugBuffer.writeln('exclusive: ${dbgArchive.isUpowerExclusive}');
+          debugBuffer.writeln('preview: ${dbgArchive.isUpowerPreview}');
+          debugBuffer.writeln('play: ${dbgArchive.isUpowerPlay}');
+          debugBuffer.writeln('badge: ${dbgArchive.badge?.text}');
+          debugBuffer.writeln('title: ${dbgArchive.title}');
+          debugBuffer.writeln('---');
+        }
                 if (kDebugMode) {
           final a = item.modules.moduleDynamic?.major?.archive;
           print(
@@ -209,6 +229,27 @@ class DynamicsDataModel {
         items!.add(item);
       }
       // filtered all
+       // ===== 临时调试：弹窗显示收集到的字段 =====
+      if (debugBuffer.isNotEmpty) {
+        SmartDialog.show(
+          builder: (context) => AlertDialog(
+            title: const Text('充电视频调试信息'),
+            content: SingleChildScrollView(
+              child: SelectableText(
+                debugBuffer.toString(),
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: SmartDialog.dismiss,
+                child: const Text('关闭'),
+              ),
+            ],
+          ),
+        );
+      }
+      // ===== 临时调试结束 =====
       if (items!.isEmpty) {
         loadNext = hasMore;
       }
