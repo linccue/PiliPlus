@@ -49,7 +49,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           },
           customBorder: const CircleBorder(),
                    child: PendantAvatar(
-            Accounts.main.userInfo?.face ?? '',
+            Pref.userInfoCache?.face ?? 'https://i0.hdslb.com/bfs/face/member/noface.jpg',
             size: 34,
           ),
         ),
