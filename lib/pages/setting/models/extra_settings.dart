@@ -73,6 +73,33 @@ List<SettingsModel> get extraSettings => [
       onTap: (context) => Get.toNamed('/sponsorBlock'),
     ),
   ),
+    const SwitchModel(
+  title: '屏蔽无权查看的动态',
+  subtitle: '例如充电专属、权限受限的动态',
+  leading: Icon(Icons.lock_outline),
+  setKey: SettingBoxKey.blockInaccessibleDynamics,
+  defaultVal: false,
+),
+const SwitchModel(
+  title: '屏蔽跳转广告动态',
+  leading: Icon(Icons.block),
+  setKey: SettingBoxKey.blockAdJumpDynamics,
+  defaultVal: false,
+),
+const SwitchModel(
+  title: '屏蔽直播预约动态',
+  subtitle: '直播开播、预约推荐等动态',
+  leading: Icon(Icons.live_tv_outlined),
+  setKey: SettingBoxKey.blockLiveReminderDynamics,
+  defaultVal: false,
+),
+const SwitchModel(
+  title: '屏蔽推广动态',
+  subtitle: '时间线乱序展示且无投稿时间的推广内容',
+  leading: Icon(Icons.campaign_outlined),
+  setKey: SettingBoxKey.blockPromotedDynamics,
+  defaultVal: false,
+),
   PopupModel<SkipType>(
     title: '番剧片头/片尾跳过类型',
     leading: const Icon(MdiIcons.debugStepOver),
