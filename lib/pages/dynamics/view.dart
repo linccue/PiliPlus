@@ -169,42 +169,55 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       primary: false,
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.transparent,
-      appBar: PreferredSize(
-        preferredSize: const .fromHeight(50),
-        child: Row(
-          children: [
-            ?leading,
-            Expanded(
-              child: TabBar(
-                dividerHeight: 0,
-                isScrollable: true,
-                tabAlignment: .start,
-                dividerColor: Colors.transparent,
-                labelColor: colorScheme.primary,
-                indicatorColor: colorScheme.primary,
-                controller: _dynamicsController.tabController,
-                unselectedLabelColor: colorScheme.onSurface,
-                labelStyle:
-                    TabBarTheme.of(context).labelStyle
-                        ?.copyWith(fontSize: 13) ??
-                    const TextStyle(fontSize: 13),
-                tabs: DynamicsTabType.values
-                    .map((e) => Tab(text: e.label))
-                    .toList(),
-                onTap: (index) {
-                  if (!_dynamicsController.tabController.indexIsChanging) {
-                    _dynamicsController.animateToTop();
-                  }
-                },
-              ),
-            ),
-            actions,
-          ],
-        ),
-      ),
       drawer: drawer,
       endDrawer: endDrawer,
-      body: onBuild(child),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              pinned: false,
+              toolbarHeight: 50,
+              titleSpacing: 0,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              backgroundColor: colorScheme.surface,
+              title: Row(
+                children: [
+                  ?leading,
+                  Expanded(
+                    child: TabBar(
+                      dividerHeight: 0,
+                      isScrollable: true,
+                      tabAlignment: .start,
+                      dividerColor: Colors.transparent,
+                      labelColor: colorScheme.primary,
+                      indicatorColor: colorScheme.primary,
+                      controller: _dynamicsController.tabController,
+                      unselectedLabelColor: colorScheme.onSurface,
+                      labelStyle:
+                          TabBarTheme.of(context).labelStyle
+                              ?.copyWith(fontSize: 13) ??
+                          const TextStyle(fontSize: 13),
+                      tabs: DynamicsTabType.values
+                          .map((e) => Tab(text: e.label))
+                          .toList(),
+                      onTap: (index) {
+                        if (!_dynamicsController.tabController.indexIsChanging) {
+                          _dynamicsController.animateToTop();
+                        }
+                      },
+                    ),
+                  ),
+                  actions,
+                ],
+              ),
+            ),
+          ];
+        },
+        body: onBuild(child),
+      ),
     );
   }
 }
