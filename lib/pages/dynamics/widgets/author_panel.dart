@@ -7,6 +7,7 @@ import 'package:PiliPlus/common/widgets/dialog/report.dart';
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/common/widgets/translucent_row.dart';
 import 'package:PiliPlus/http/constants.dart';
+import 'package:PiliPlus/http/fav.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/reply.dart';
 import 'package:PiliPlus/http/user.dart';
@@ -245,15 +246,26 @@ class AuthorPanel extends StatelessWidget {
 
   void morePanel(BuildContext context) {
     String? bvid;
+    int? aid; 
     try {
       String? getBvid(String? type, DynamicMajorModel? major) => switch (type) {
         'DYNAMIC_TYPE_AV' => major?.archive?.bvid,
         'DYNAMIC_TYPE_UGC_SEASON' => major?.ugcSeason?.bvid,
         _ => null,
       };
+      int? getAid(String? type, DynamicMajorModel? major) => switch (type) {
+        'DYNAMIC_TYPE_AV' => major?.archive?.aid,
+        'DYNAMIC_TYPE_UGC_SEASON' => major?.ugcSeason?.aid,
+        _ => null,
+      };
       bvid = getBvid(item.type, item.modules.moduleDynamic?.major);
+      aid = getAid(item.type, item.modules.moduleDynamic?.major);
       if (bvid == null && item.orig != null) {
         bvid = getBvid(
+          item.orig!.type,
+          item.orig!.modules.moduleDynamic?.major,
+        );
+        aid = getAid(
           item.orig!.type,
           item.orig!.modules.moduleDynamic?.major,
         );
@@ -308,6 +320,39 @@ class AuthorPanel extends StatelessWidget {
                     style: theme.textTheme.titleSmall,
                   ),
                 ),
+              // ================= 新增：快速收藏 =================
+              if (aid != null)
+                ListTile(
+                  onTap: () async {
+                    Get.back();
+                    // 读取设置里的默认收藏夹 ID
+                    final favId = Pref.quickFavId;
+                    if (favId == null) {
+                      SmartDialog.showToast('请先在设置中配置「快速收藏」的默认文件夹');
+                      return;
+                    }
+                    
+                    SmartDialog.showLoading(msg: '收藏中...');
+                    final res = await FavHttp.addFav(
+                      aid: aid,
+                      addFavFolderId: favId,
+                    );
+                    SmartDialog.dismiss();
+                    
+                    if (res.isSuccess) {
+                      SmartDialog.showToast('已加入默认收藏夹');
+                    } else {
+                      SmartDialog.showToast('收藏失败: ${res.message}');
+                    }
+                  },
+                  minLeadingWidth: 0,
+                  leading: const Icon(Icons.favorite_border, size: 19),
+                  title: Text(
+                    '加入收藏',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+              // ==================================================
               ListTile(
                 onTap: () {
                   Get.back();
