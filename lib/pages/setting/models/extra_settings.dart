@@ -100,6 +100,13 @@ const SwitchModel(
   setKey: SettingBoxKey.blockPromotedDynamics,
   defaultVal: false,
 ),
+      const SwitchModel(
+    title: '屏蔽转发动态',
+    subtitle: '隐藏所有转发类型的动态',
+    leading: Icon(Icons.repeat),
+    setKey: SettingBoxKey.blockForwardDynamics,
+    defaultVal: false,
+  ),
   PopupModel<SkipType>(
     title: '番剧片头/片尾跳过类型',
     leading: const Icon(MdiIcons.debugStepOver),
