@@ -3,7 +3,7 @@ import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart'; // 导入 SmartDialog
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 
 class DynamicsTabSettingPage extends StatefulWidget {
@@ -26,7 +26,7 @@ class _DynamicsTabSettingPageState extends State<DynamicsTabSettingPage> {
 
   void _save() {
     if (_selected.isEmpty) {
-      SmartDialog.showToast('至少需要保留一个标签页'); // 修复：使用 SmartDialog
+      SmartDialog.showToast('至少需要保留一个标签页');
       return;
     }
     final saveList = _tabs
@@ -35,7 +35,7 @@ class _DynamicsTabSettingPageState extends State<DynamicsTabSettingPage> {
         .toList();
     GStorage.setting.put(SettingBoxKey.dynamicsTabs, saveList);
     Get.back();
-    SmartDialog.showToast('保存成功，返回动态页刷新即可生效'); // 修复：使用 SmartDialog
+    SmartDialog.showToast('保存成功，请重启应用生效');
   }
 
   void _reset() {
@@ -90,7 +90,7 @@ class _DynamicsTabSettingPageState extends State<DynamicsTabSettingPage> {
               },
             ),
             title: Text(tab.label),
-            trailing: const Icon(Icons.drag_handle),
+            trailing: const Icon(Icons.drag_handle), // 双排六点图标
             onTap: () {
               setState(() {
                 if (isSelected) {
