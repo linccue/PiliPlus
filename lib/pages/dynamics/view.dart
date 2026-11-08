@@ -13,7 +13,6 @@ import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection; // 修复 ScrollDirection 未定义
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart' hide DraggableScrollableSheet;
 
@@ -30,12 +29,12 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   UpPanelPosition get upPanelPosition => _dynamicsController.upPanelPosition;
   late final MainController _mainController = Get.find<MainController>();
 
-  // 控制顶栏显隐状态
   bool _hideAppBar = false;
 
   @override
   bool get wantKeepAlive => true;
 
+  // 头像按钮
   Widget _createAvatarBtn({bool isRight = true}) =>
       Container(
         width: 34,
@@ -50,7 +49,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           },
           customBorder: const CircleBorder(),
           child: PendantAvatar(
-            face: Accounts.main.face, // 修复：参数名改为 face
+            face: Accounts.main.face ?? '',
             size: 34,
           ),
         ),
@@ -103,17 +102,13 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
 
   @override
   bool onNotificationType1(UserScrollNotification notification) {
-    if (checkPage) {
-      return false;
-    }
+    if (checkPage) return false;
     return super.onNotificationType1(notification);
   }
 
   @override
   bool onNotificationType2(ScrollNotification notification) {
-    if (checkPage) {
-      return false;
-    }
+    if (checkPage) return false;
     return super.onNotificationType2(notification);
   }
 
@@ -128,7 +123,6 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
     Widget? leading;
     Widget actions;
 
-    // 从 Pref 读取用户自定义的标签列表
     final tabTypes = Pref.dynamicsTabs;
 
     Widget child = tabBarView(
@@ -141,26 +135,17 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
     switch (upPanelPosition) {
       case .top:
         child = Column(
-          children: [
-            upPanelPart(colorScheme),
-            Expanded(child: child),
-          ],
+          children: [upPanelPart(colorScheme), Expanded(child: child)],
         );
         actions = _createAvatarBtn();
       case .leftFixed:
         child = Row(
-          children: [
-            upPanelPart(colorScheme),
-            Expanded(child: child),
-          ],
+          children: [upPanelPart(colorScheme), Expanded(child: child)],
         );
         actions = _createAvatarBtn();
       case .rightFixed:
         child = Row(
-          children: [
-            Expanded(child: child),
-            upPanelPart(colorScheme),
-          ],
+          children: [Expanded(child: child), upPanelPart(colorScheme)],
         );
         actions = _createAvatarBtn();
       case .leftDrawer:
@@ -169,7 +154,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
         leading = const DrawerButton();
       case .rightDrawer:
         endDrawer = upPanelPart(colorScheme);
-        leading = _createAvatarBtn(isRight: false);
+        leading = _createAvatarBtn(isRight: false); // 左上角头像
         actions = const EndDrawerButton();
     }
 
@@ -203,13 +188,8 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
                       indicatorColor: colorScheme.primary,
                       controller: _dynamicsController.tabController,
                       unselectedLabelColor: colorScheme.onSurface,
-                      labelStyle:
-                          TabBarTheme.of(context).labelStyle
-                              ?.copyWith(fontSize: 13) ??
-                          const TextStyle(fontSize: 13),
-                      tabs: tabTypes
-                          .map((e) => Tab(text: e.label))
-                          .toList(),
+                      labelStyle: TabBarTheme.of(context).labelStyle?.copyWith(fontSize: 13) ?? const TextStyle(fontSize: 13),
+                      tabs: tabTypes.map((e) => Tab(text: e.label)).toList(),
                       onTap: (index) {
                         if (!_dynamicsController.tabController.indexIsChanging) {
                           _dynamicsController.animateToTop();
@@ -224,16 +204,19 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           ),
         ),
       ),
-      body: NotificationListener<UserScrollNotification>(
+      body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (checkPage) return false;
-          // 根据滚动方向动态改变顶栏高度
-          if (notification.direction == ScrollDirection.forward) {
-            // 向上滑动（看历史），显示顶栏
-            if (_hideAppBar) setState(() => _hideAppBar = false);
-          } else if (notification.direction == ScrollDirection.reverse) {
-            // 向下滑动（看新内容），隐藏顶栏
-            if (!_hideAppBar) setState(() => _hideAppBar = true);
+          // 只处理垂直列表的更新通知
+          if (notification.depth == 0 && notification is ScrollUpdateNotification) {
+            if (notification.metrics.axis == Axis.vertical) {
+              // 向下滑动隐藏，向上滑动显示
+              if (notification.scrollDelta != null && notification.scrollDelta! > 0 && !_hideAppBar) {
+                setState(() => _hideAppBar = true);
+              } else if (notification.scrollDelta != null && notification.scrollDelta! < 0 && _hideAppBar) {
+                setState(() => _hideAppBar = false);
+              }
+            }
           }
           return false;
         },
