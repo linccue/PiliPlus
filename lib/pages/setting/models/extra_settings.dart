@@ -299,6 +299,13 @@ const SwitchModel(
     leading: const Icon(Icons.delete_outlined),
     onTap: _showCacheDialog,
   ),
+      const SwitchModel(
+    title: '动态页调试弹窗',
+    subtitle: '开启后在动态页刷新时，会弹出充电视频字段信息',
+    leading: Icon(Icons.bug_report),
+    setKey: SettingBoxKey.enableDebugDialog,
+    defaultVal: false,
+  ),
   SwitchModel(
     title: '检查更新',
     subtitle: '每次启动时检查是否需要更新',
