@@ -42,8 +42,9 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           onTap: () {
             final idx = _mainController.navigationBars.indexOf(NavigationBarType.mine);
             if (idx != -1) {
-              // 通过修改 index 触发底栏高亮
               _mainController.selectedIndex.value = idx;
+              // ⚠️ 注意：如果你在 main/view.dart 里找到了切换页面的代码，请填在这里：
+              // 比如：_mainController.changePage(idx); 或者类似的方法
             }
           },
           customBorder: const CircleBorder(),
