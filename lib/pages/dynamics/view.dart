@@ -13,6 +13,7 @@ import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection; // 修复 ScrollDirection 未定义
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart' hide DraggableScrollableSheet;
 
@@ -49,7 +50,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           },
           customBorder: const CircleBorder(),
           child: PendantAvatar(
-            avatar: Accounts.main.face,
+            face: Accounts.main.face, // 修复：参数名改为 face
             size: 34,
           ),
         ),
