@@ -323,16 +323,19 @@ class AuthorPanel extends StatelessWidget {
               // ================= 新增：快速收藏 =================
               if (aid != null)
                 ListTile(
-                                    onTap: () async {
+                                                    onTap: () async {
                     Get.back();
                     final favId = Pref.quickFavId;
-                    if (favId == null) {
+                    // 关键修复：加上 favId == 0 的拦截，防止发送无效ID导致假成功
+                    if (favId == null || favId == 0) {
                       SmartDialog.showToast('请先在设置中配置「快速收藏」的默认文件夹');
                       return;
                     }
                     
                     SmartDialog.showLoading(msg: '收藏中...');
-                    // 修正：B站接口格式要求为 "资源ID:资源类型(2代表视频)"
+                    // 打印日志，方便调试
+                    debugPrint('请求收藏: resources=$aid:2, addIds=$favId');
+                    
                     final res = await FavHttp.favVideo(
                       resources: '$aid:2', 
                       addIds: favId.toString(),
