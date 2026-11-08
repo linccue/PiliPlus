@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamics_type.dart';
 import 'package:PiliPlus/models/dynamics/article_content_model.dart';
@@ -158,6 +158,18 @@ class DynamicsDataModel {
           type != DynamicsTabType.up && tempBannedList?.isNotEmpty == true;
       for (final e in list) {
         DynamicItemModel item = DynamicItemModel.fromJson(e);
+                if (kDebugMode) {
+          final a = item.modules.moduleDynamic?.major?.archive;
+          print(
+            '动态检查: type=${item.type}, '
+            'majorType=${item.modules.moduleDynamic?.major?.type}, '
+            'exclusive=${a?.isUpowerExclusive}, '
+            'preview=${a?.isUpowerPreview}, '
+            'play=${a?.isUpowerPlay}, '
+            'badge=${a?.badge?.text}, '
+            'title=${a?.title}',
+          );
+        }
         if (antiGoodsDyn &&
             (item.orig?.modules.moduleDynamic?.additional?.type ==
                     'ADDITIONAL_TYPE_GOODS' ||
