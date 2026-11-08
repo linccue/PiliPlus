@@ -1210,6 +1210,8 @@ class DynamicArchiveModel {
   int? id;
   int? aid;
   Badge? badge;
+   bool? isUpowerExclusive;
+  bool? isUpowerPreview;
   String? bvid;
   String? cover;
   String? durationText;
@@ -1221,6 +1223,8 @@ class DynamicArchiveModel {
   int? seasonId;
 
   DynamicArchiveModel.fromJson(Map<String, dynamic> json) {
+    isUpowerExclusive = json['is_upower_exclusive'] as bool?;
+    isUpowerPreview = json['is_upower_preview'] as bool?;
     id = safeToInt(json['id']);
     aid = safeToInt(json['aid']);
     badge = json['badge'] == null ? null : Badge.fromJson(json['badge']);
