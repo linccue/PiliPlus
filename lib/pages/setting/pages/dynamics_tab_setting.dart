@@ -49,6 +49,11 @@ class _DynamicsTabSettingPageState extends State<DynamicsTabSettingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // 强制添加返回箭头
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: Get.back,
+        ),
         title: const Text('动态标签页编辑'),
         actions: [
           TextButton(
@@ -90,7 +95,7 @@ class _DynamicsTabSettingPageState extends State<DynamicsTabSettingPage> {
               },
             ),
             title: Text(tab.label),
-            trailing: const Icon(Icons.drag_handle), // 双排六点图标
+            trailing: const Icon(Icons.drag_handle),
             onTap: () {
               setState(() {
                 if (isSelected) {
