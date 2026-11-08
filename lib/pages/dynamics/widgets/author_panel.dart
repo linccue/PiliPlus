@@ -323,9 +323,8 @@ class AuthorPanel extends StatelessWidget {
               // ================= 新增：快速收藏 =================
               if (aid != null)
                 ListTile(
-                  onTap: () async {
+                                    onTap: () async {
                     Get.back();
-                    // 读取设置里的默认收藏夹 ID
                     final favId = Pref.quickFavId;
                     if (favId == null) {
                       SmartDialog.showToast('请先在设置中配置「快速收藏」的默认文件夹');
@@ -333,8 +332,9 @@ class AuthorPanel extends StatelessWidget {
                     }
                     
                     SmartDialog.showLoading(msg: '收藏中...');
+                    // 修正：B站接口格式要求为 "资源ID:资源类型(2代表视频)"
                     final res = await FavHttp.favVideo(
-                      resources: 'aid:$aid',
+                      resources: '$aid:2', 
                       addIds: favId.toString(),
                     );
                     SmartDialog.dismiss();
@@ -342,8 +342,7 @@ class AuthorPanel extends StatelessWidget {
                     if (res.isSuccess) {
                       SmartDialog.showToast('已加入默认收藏夹');
                     } else {
-                      // 如果 res 没有 message 属性会报错，换成 errorMsg 或直接写死
-                      SmartDialog.showToast('收藏失败'); 
+                      SmartDialog.showToast('收藏失败');
                     }
                   },
                   minLeadingWidth: 0,
