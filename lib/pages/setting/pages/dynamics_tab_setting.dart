@@ -49,7 +49,7 @@ class _DynamicsTabSettingPageState extends State<DynamicsTabSettingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // 强制添加返回箭头
+        // 强制在左上角显示返回箭头
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: Get.back,
@@ -95,6 +95,7 @@ class _DynamicsTabSettingPageState extends State<DynamicsTabSettingPage> {
               },
             ),
             title: Text(tab.label),
+            // 右侧的双排六个点拖动图标
             trailing: const Icon(Icons.drag_handle),
             onTap: () {
               setState(() {
