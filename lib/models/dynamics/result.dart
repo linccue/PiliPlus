@@ -110,6 +110,10 @@ class DynamicsDataModel {
         type == 'DYNAMIC_TYPE_COMMON_SQUARE') {
       return true;
     }
+      // 5. 屏蔽转发动态
+  static bool _isForwardDyn(DynamicItemModel item) {
+    return item.type == 'DYNAMIC_TYPE_FORWARD';
+  }
     final additional = item.modules.moduleDynamic?.additional;
     if (additional?.common != null) return true;
     if (additional?.ugc != null) return true;
@@ -128,7 +132,7 @@ class DynamicsDataModel {
     final blockAdJump = Pref.blockAdJumpDynamics;
     final blockLiveReminder = Pref.blockLiveReminderDynamics;
     final blockPromoted = Pref.blockPromotedDynamics;
-
+    final blockForward = Pref.blockForwardDynamics;
     List? list = json['items'] as List?;
     if (list != null && list.isNotEmpty) {
       items = <DynamicItemModel>[];
@@ -153,6 +157,9 @@ class DynamicsDataModel {
           continue;
         }
         if (blockPromoted && _isPromotedDyn(item)) {
+          continue;
+        }
+                if (blockForward && _isForwardDyn(item)) {
           continue;
         }
         if (enableFilter) {
