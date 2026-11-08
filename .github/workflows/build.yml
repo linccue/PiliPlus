@@ -96,7 +96,6 @@ jobs:
             local dest="build/media_kit_libs_android_video/20260906/${file}"
             local original_url="https://github.com/My-Responsitories/libmpv-android-video-build/releases/download/20260906/${file}"
             
-            # 准备了5个不同的加速节点，外加直连
             local proxies=(
               "https://ghfast.top/"
               "https://gh-proxy.com/"
@@ -110,17 +109,13 @@ jobs:
               for proxy in "${proxies[@]}"; do
                 local url="${proxy}${original_url}"
                 echo "尝试节点: ${proxy:-直连}"
-                # 设置15秒连接超时，60秒最大下载时间，防止卡死
                 if curl -L -f -s -o "$dest" --connect-timeout 15 --max-time 60 "$url"; then
-                  # 校验文件大小，正常 jar 包至少有 1MB 以上，防止下到错误网页
                   if [ $(stat -c%s "$dest") -gt 1000000 ]; then
                     echo "✅ ${file} 下载成功！"
                     return 0
                   fi
                 fi
-                echo "⚠️ 当前节点失败，切换下一个..."
               done
-              echo "第 $i 轮失败，等待 3 秒..."
               sleep 3
             done
             echo "❌ ${file} 下载彻底失败！"
@@ -135,12 +130,10 @@ jobs:
         run: |
           flutter pub get
           GRADLE_FILE=$(find ~/.pub-cache -name "build.gradle" -path "*media_kit_libs_android_video*" | head -n 1)
-          
           if [ -n "$GRADLE_FILE" ]; then
             sed -i 's/def downloadFile = {/def downloadFile = { return \/\/ /g' "$GRADLE_FILE"
             sed -i 's/if (sha256 != null && !sha256.equalsIgnoreCase(fileSha256))/if (false)/g' "$GRADLE_FILE"
             sed -i 's/if (!file.exists())/if (false)/g' "$GRADLE_FILE"
-            echo "✅ 插件下载与校验逻辑已被彻底拦截"
           fi
 
       # ============================================
@@ -150,14 +143,22 @@ jobs:
         env:
           GRADLE_OPTS: "-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000"
         run: |
+          # 加上 set -o pipefail，这样编译一旦报错，流程就会立刻终止
+          set -o pipefail
           flutter build apk --release --split-per-abi --dart-define-from-file=pili_release.json --no-pub 2>&1 | tee flutter_build.log
 
       - name: Rename
         run: |
-          for file in build/app/outputs/flutter-apk/app-*-release.apk; do
-            abi=$(echo "$file" | sed -E 's|.*app-(.*)-release\.apk|\1|')
-            mv "$file" "PiliPlus_android_${{ env.version }}_${abi}.apk"
-          done
+          # 加入文件存在性检查，防止瞎报错
+          if ls build/app/outputs/flutter-apk/app-*-release.apk 1> /dev/null 2>&1; then
+            for file in build/app/outputs/flutter-apk/app-*-release.apk; do
+              abi=$(echo "$file" | sed -E 's|.*app-(.*)-release\.apk|\1|')
+              mv "$file" "PiliPlus_android_${{ env.version }}_${abi}.apk"
+            done
+          else
+            echo "❌ 找不到生成的 APK 文件，编译可能失败了！请下载 Android_build_log 查看具体报错。"
+            exit 1
+          fi
         shell: bash
 
       - name: Release
@@ -217,7 +218,7 @@ jobs:
     permissions:
       contents: write
     with:
-      tag: ${{ github.event_name == 'workflow_dispatch' && github.inputs.tag || '' }}
+      tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
 
   linux_x64:
     if: ${{ github.event.inputs.build_linux_x64 == 'true' }}
