@@ -43,8 +43,12 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           onTap: () {
             final idx = _mainController.navigationBars.indexOf(NavigationBarType.mine);
             if (idx != -1) {
-              // 使用 setIndex 方法，确保底栏高亮和 PageView 页面同步切换
-              _mainController.setIndex(idx);
+              // 1. 直接修改底栏的高亮状态
+              _mainController.selectedIndex.value = idx;
+              // 2. 强制 PageView 滑动到目标页面，不管底栏是否隐藏
+              if (_mainController.controller.hasClients) {
+                _mainController.controller.jumpToPage(idx);
+              }
             }
           },
           customBorder: const CircleBorder(),
@@ -54,7 +58,6 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           ),
         ),
       );
-
   Widget upPanelPart(ColorScheme colorScheme) {
     final isTop = upPanelPosition == .top;
     final needBg = upPanelPosition.index > 2;
