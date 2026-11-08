@@ -47,18 +47,39 @@ class DynamicsDataModel {
 
   static bool antiGoodsDyn = Pref.antiGoodsDyn;
 
-  // 1. 无权查看 / 充电专属
+   // 1. 无权查看 / 充电专属
   static bool _isInaccessibleDyn(DynamicItemModel item) {
+    // 顶层类型直接匹配
     final type = item.type;
     if (type == 'DYNAMIC_TYPE_SUBSCRIPTION' ||
         type == 'DYNAMIC_TYPE_SUBSCRIPTION_NEW') {
       return true;
     }
+
+    // 不可见 / 被屏蔽的占位卡片
     if (item.visible == false) return true;
     if (item.modules.moduleBlocked != null) return true;
+
+    // 深入到 major 里检查充电专属卡片
     final major = item.modules.moduleDynamic?.major;
-    if (major?.blocked != null) return true;
-    if (major?.subscriptionNew != null) return true;
+    if (major != null) {
+      final majorType = major.type;
+      if (majorType == 'MAJOR_TYPE_SUBSCRIPTION' ||
+          majorType == 'MAJOR_TYPE_SUBSCRIPTION_NEW' ||
+          majorType == 'MAJOR_TYPE_UPOWER_COMMON') {
+        return true;
+      }
+      if (major.blocked != null || major.subscriptionNew != null) return true;
+    }
+
+    // 充电专属抽奖卡片
+    final additional = item.modules.moduleDynamic?.additional;
+    if (additional?.type == 'ADDITIONAL_TYPE_UPOWER_LOTTERY') return true;
+    if (additional?.upowerLottery != null) return true;
+
+    // 如果是转发，递归检查原动态
+    if (item.orig != null && _isInaccessibleDyn(item.orig!)) return true;
+
     return false;
   }
 
