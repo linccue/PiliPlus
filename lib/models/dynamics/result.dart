@@ -47,17 +47,39 @@ class DynamicsDataModel {
 
   static bool antiGoodsDyn = Pref.antiGoodsDyn;
 
-   // 1. 无权查看 / 充电专属（含“抢先看”预览）
+  // 1. 无权查看 / 充电专属（含“抢先看”预览）
   static bool _isInaccessibleDyn(DynamicItemModel item) {
+    // 优先检查视频卡片的充电字段：未付费用户 isUpowerPlay 为 false，
+    // 同时覆盖“充电专属”与“抢先看”两种角标
+    final archive = item.modules.moduleDynamic?.major?.archive;
+    if (archive != null) {
+      if (archive.isUpowerExclusive == true && archive.isUpowerPlay != true) {
+        return true;
+      }
+      if (archive.isUpowerPreview == true) {
+        return true;
+      }
+      final badgeText = archive.badge?.text;
+      if (badgeText != null &&
+          (badgeText.contains('充电') ||
+              badgeText.contains('专属') ||
+              badgeText.contains('抢先看'))) {
+        return true;
+      }
+    }
+
+    // 顶层类型
     final type = item.type;
     if (type == 'DYNAMIC_TYPE_SUBSCRIPTION' ||
         type == 'DYNAMIC_TYPE_SUBSCRIPTION_NEW') {
       return true;
     }
 
+    // 不可见 / 被屏蔽的占位卡片
     if (item.visible == false) return true;
     if (item.modules.moduleBlocked?.blockedType == 3) return true;
 
+    // major 卡片类型
     final major = item.modules.moduleDynamic?.major;
     if (major != null) {
       if (major.type == 'MAJOR_TYPE_SUBSCRIPTION' ||
@@ -66,26 +88,19 @@ class DynamicsDataModel {
         return true;
       }
       if (major.blocked != null || major.subscriptionNew != null) return true;
-
-      // 新增：检查视频卡片的充电专属 / 预览标识
-      final archive = major.archive;
-      if (archive != null) {
-        // 如果模型已有这些字段，直接判断；否则需要先在 DynamicArchiveModel 中补上
-        if (archive.isUpowerExclusive == true ||
-            archive.isUpowerPreview == true) {
-          return true;
-        }
-      }
     }
 
+    // 充电专属抽奖卡片
     final additional = item.modules.moduleDynamic?.additional;
     if (additional?.type == 'ADDITIONAL_TYPE_UPOWER_LOTTERY') return true;
     if (additional?.upowerLottery != null) return true;
 
+    // 如果是转发，递归检查原动态
     if (item.orig != null && _isInaccessibleDyn(item.orig!)) return true;
 
     return false;
   }
+
   // 2. 跳转广告
   static bool _isAdJumpDyn(DynamicItemModel item) {
     final type = item.type;
@@ -106,16 +121,14 @@ class DynamicsDataModel {
     return false;
   }
 
-  // 4. 推广（乱序、无投稿时间）
+  // 4. 推广（乱序、无投稿时间）；保留视频合集
   static bool _isPromotedDyn(DynamicItemModel item) {
     final type = item.type;
-    if (type == 'DYNAMIC_TYPE_UGC_SEASON' ||
-        type == 'DYNAMIC_TYPE_COMMON_SQUARE') {
+    if (type == 'DYNAMIC_TYPE_COMMON_SQUARE') {
       return true;
     }
     final additional = item.modules.moduleDynamic?.additional;
     if (additional?.common != null) return true;
-    if (additional?.ugc != null) return true;
     if (additional?.match != null) return true;
     return false;
   }
@@ -1205,13 +1218,17 @@ class DynamicArchiveModel {
     this.type,
     this.epid,
     this.seasonId,
+    this.isUpowerExclusive,
+    this.isUpowerPreview,
+    this.isUpowerPlay,
   });
 
   int? id;
   int? aid;
   Badge? badge;
-   bool? isUpowerExclusive;
+  bool? isUpowerExclusive;
   bool? isUpowerPreview;
+  bool? isUpowerPlay;
   String? bvid;
   String? cover;
   String? durationText;
@@ -1225,6 +1242,7 @@ class DynamicArchiveModel {
   DynamicArchiveModel.fromJson(Map<String, dynamic> json) {
     isUpowerExclusive = json['is_upower_exclusive'] as bool?;
     isUpowerPreview = json['is_upower_preview'] as bool?;
+    isUpowerPlay = json['is_upower_play'] as bool?;
     id = safeToInt(json['id']);
     aid = safeToInt(json['aid']);
     badge = json['badge'] == null ? null : Badge.fromJson(json['badge']);
