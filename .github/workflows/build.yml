@@ -101,12 +101,22 @@ jobs:
 
             - name: Flutter Build Release Apk
               if: ${{ github.event_name == 'workflow_dispatch' }}
-              run: flutter build apk --release --split-per-abi --dart-define-from-file=pili_release.json --no-pub
+              env:
+                  # 增加 Gradle 下载依赖的超时时间，防止 GitHub 网络波动导致 504 错误
+                  GRADLE_OPTS: "-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000"
+              run: |
+                  set -o pipefail
+                  flutter build apk --release --split-per-abi \
+                    --dart-define-from-file=pili_release.json \
+                    --no-pub 2>&1 | tee flutter_build.log
 
             - name: Flutter Build Dev Apk
               if: ${{ github.event_name == 'pull_request' }}
+              env:
+                  GRADLE_OPTS: "-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000"
               run: |
-                  flutter build apk --release --split-per-abi --android-project-arg dev=1 --no-pub
+                  set -o pipefail
+                  flutter build apk --release --split-per-abi --android-project-arg dev=1 --no-pub 2>&1 | tee flutter_build.log
 
             - name: Rename
               run: |
@@ -126,23 +136,30 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: 上传
+            - name: 上传 arm64-v8a
               uses: actions/upload-artifact@v4
               with:
                   name: Android_arm64-v8a
                   path: PiliPlus_android_*_arm64-v8a.apk
 
-            - name: 上传
+            - name: 上传 armeabi-v7a
               uses: actions/upload-artifact@v4
               with:
                   name: Android_armeabi-v7a
                   path: PiliPlus_android_*_armeabi-v7a.apk
 
-            - name: 上传
+            - name: 上传 x86_64
               uses: actions/upload-artifact@v4
               with:
                   name: Android_x86_64
                   path: PiliPlus_android_*_x86_64.apk
+
+            - name: 上传构建日志
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: Android_build_log
+                  path: flutter_build.log
 
     ios:
         if: ${{ (github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_ios == 'true' }}
