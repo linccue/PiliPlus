@@ -10,7 +10,6 @@ import 'package:PiliPlus/pages/dynamics/controller.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/up_panel.dart';
 import 'package:PiliPlus/pages/dynamics_tab/view.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
-import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:get/get.dart';
@@ -45,10 +44,12 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
             final idx = _mainController.navigationBars.indexOf(NavigationBarType.mine);
             if (idx != -1) {
               _mainController.selectedIndex.value = idx;
+              // 加上跳转，解决页面内容不切换的问题
+              _mainController.pageController.jumpToPage(idx); 
             }
           },
           customBorder: const CircleBorder(),
-                   child: PendantAvatar(
+          child: PendantAvatar(
             Pref.userInfoCache?.face ?? 'https://i0.hdslb.com/bfs/face/member/noface.jpg',
             size: 34,
           ),
@@ -182,7 +183,8 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
                     child: TabBar(
                       dividerHeight: 0,
                       isScrollable: true,
-                      tabAlignment: .start,
+                      // 居中排列标签
+                      tabAlignment: TabAlignment.center, 
                       dividerColor: Colors.transparent,
                       labelColor: colorScheme.primary,
                       indicatorColor: colorScheme.primary,
@@ -210,11 +212,13 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (checkPage) return false;
-          if (notification.depth == 0 && notification is ScrollUpdateNotification) {
+          // 修复：移除 depth == 0 限制，只要发生垂直滚动就触发
+          if (notification is ScrollUpdateNotification) {
             if (notification.metrics.axis == Axis.vertical) {
-              if (notification.scrollDelta != null && notification.scrollDelta! > 0 && !_hideAppBar) {
+              final delta = notification.scrollDelta ?? 0;
+              if (delta > 0 && !_hideAppBar && notification.metrics.pixels > 0) {
                 setState(() => _hideAppBar = true);
-              } else if (notification.scrollDelta != null && notification.scrollDelta! < 0 && _hideAppBar) {
+              } else if (delta < 0 && _hideAppBar) {
                 setState(() => _hideAppBar = false);
               }
             }
