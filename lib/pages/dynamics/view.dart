@@ -1,7 +1,9 @@
 import 'package:PiliPlus/common/widgets/scroll_physics.dart' show tabBarView;
+import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamics_type.dart';
 import 'package:PiliPlus/models/common/dynamic/up_panel_position.dart';
+import 'package:PiliPlus/models/common/nav_bar_config.dart';
 import 'package:PiliPlus/models/dynamics/up.dart';
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/dynamics/controller.dart';
@@ -9,6 +11,7 @@ import 'package:PiliPlus/pages/dynamics/widgets/up_panel.dart';
 import 'package:PiliPlus/pages/dynamics_create/view.dart';
 import 'package:PiliPlus/pages/dynamics_tab/view.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
+import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart' hide DraggableScrollableSheet;
@@ -29,24 +32,22 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   @override
   bool get wantKeepAlive => true;
 
-  Widget _createDynamicBtn(ColorScheme colorScheme, {bool isRight = true}) =>
+  Widget _createAvatarBtn({bool isRight = true}) =>
       Container(
         width: 34,
         height: 34,
         margin: isRight ? const .only(right: 16) : const .only(left: 16),
-        child: IconButton(
-          tooltip: '发布动态',
-          style: ButtonStyle(
-            padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-            backgroundColor: WidgetStatePropertyAll(
-              colorScheme.secondaryContainer,
-            ),
-          ),
-          onPressed: () => CreateDynPanel.onCreateDyn(context),
-          icon: Icon(
-            Icons.add,
-            size: 18,
-            color: colorScheme.onSecondaryContainer,
+        child: InkWell(
+          onTap: () {
+            final idx = _mainController.navigationBars.indexOf(NavigationBarType.mine);
+            if (idx != -1) {
+              _mainController.selectedIndex.value = idx;
+            }
+          },
+          customBorder: const CircleBorder(),
+          child: PendantAvatar(
+            avatar: Accounts.main.face,
+            size: 34,
           ),
         ),
       );
@@ -138,7 +139,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
             Expanded(child: child),
           ],
         );
-        actions = _createDynamicBtn(colorScheme);
+        actions = _createAvatarBtn();
       case .leftFixed:
         child = Row(
           children: [
@@ -146,7 +147,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
             Expanded(child: child),
           ],
         );
-        actions = _createDynamicBtn(colorScheme);
+        actions = _createAvatarBtn();
       case .rightFixed:
         child = Row(
           children: [
@@ -154,14 +155,14 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
             upPanelPart(colorScheme),
           ],
         );
-        actions = _createDynamicBtn(colorScheme);
+        actions = _createAvatarBtn();
       case .leftDrawer:
         drawer = upPanelPart(colorScheme);
-        actions = _createDynamicBtn(colorScheme);
+        actions = _createAvatarBtn();
         leading = const DrawerButton();
       case .rightDrawer:
         endDrawer = upPanelPart(colorScheme);
-        leading = _createDynamicBtn(colorScheme, isRight: false);
+        leading = _createAvatarBtn(isRight: false);
         actions = const EndDrawerButton();
     }
 
