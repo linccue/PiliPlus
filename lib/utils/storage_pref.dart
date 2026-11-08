@@ -49,18 +49,22 @@ import 'package:hive_ce/hive.dart';
 import 'package:material_ui/material_ui.dart';
 
 abstract final class Pref {
-      static List<DynamicsTabType> get dynamicsTabs {
-    final list = _setting.get(SettingBoxKey.dynamicsTabs) as List?;
-    if (list != null && list.isNotEmpty) {
-      return list
-          .map((e) => DynamicsTabType.values[e as int])
-          .toList();
-    }
-    return DynamicsTabType.values;
-  }
   static final Box _setting = GStorage.setting;
   static final Box _video = GStorage.video;
   static final Box _localCache = GStorage.localCache;
+
+  // ===== 动态标签页自定义 =====
+  static List<DynamicsTabType> get dynamicsTabs {
+    final list = _setting.get(SettingBoxKey.dynamicsTabs) as List?;
+    if (list != null && list.isNotEmpty) {
+      final tabs = list
+          .map((e) => DynamicsTabType.values[e as int])
+          .toList();
+      if (tabs.isNotEmpty) return tabs;
+    }
+    return DynamicsTabType.values;
+  }
+  // ===========================
 
   static UserInfoData? get userInfoCache =>
       GStorage.userInfo.get('userInfoCache');
