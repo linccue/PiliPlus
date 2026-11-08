@@ -47,20 +47,17 @@ class DynamicsDataModel {
 
   static bool antiGoodsDyn = Pref.antiGoodsDyn;
 
-   // 1. 无权查看 / 充电专属
+  // 1. 无权查看 / 充电专属
   static bool _isInaccessibleDyn(DynamicItemModel item) {
-    // 顶层类型直接匹配
     final type = item.type;
     if (type == 'DYNAMIC_TYPE_SUBSCRIPTION' ||
         type == 'DYNAMIC_TYPE_SUBSCRIPTION_NEW') {
       return true;
     }
 
-    // 不可见 / 被屏蔽的占位卡片
     if (item.visible == false) return true;
     if (item.modules.moduleBlocked != null) return true;
 
-    // 深入到 major 里检查充电专属卡片
     final major = item.modules.moduleDynamic?.major;
     if (major != null) {
       final majorType = major.type;
@@ -72,12 +69,10 @@ class DynamicsDataModel {
       if (major.blocked != null || major.subscriptionNew != null) return true;
     }
 
-    // 充电专属抽奖卡片
     final additional = item.modules.moduleDynamic?.additional;
     if (additional?.type == 'ADDITIONAL_TYPE_UPOWER_LOTTERY') return true;
     if (additional?.upowerLottery != null) return true;
 
-    // 如果是转发，递归检查原动态
     if (item.orig != null && _isInaccessibleDyn(item.orig!)) return true;
 
     return false;
@@ -110,15 +105,16 @@ class DynamicsDataModel {
         type == 'DYNAMIC_TYPE_COMMON_SQUARE') {
       return true;
     }
-      // 5. 屏蔽转发动态
-  static bool _isForwardDyn(DynamicItemModel item) {
-    return item.type == 'DYNAMIC_TYPE_FORWARD';
-  }
     final additional = item.modules.moduleDynamic?.additional;
     if (additional?.common != null) return true;
     if (additional?.ugc != null) return true;
     if (additional?.match != null) return true;
     return false;
+  }
+
+  // 5. 屏蔽转发动态
+  static bool _isForwardDyn(DynamicItemModel item) {
+    return item.type == 'DYNAMIC_TYPE_FORWARD';
   }
 
   DynamicsDataModel.fromJson(
@@ -133,6 +129,7 @@ class DynamicsDataModel {
     final blockLiveReminder = Pref.blockLiveReminderDynamics;
     final blockPromoted = Pref.blockPromotedDynamics;
     final blockForward = Pref.blockForwardDynamics;
+
     List? list = json['items'] as List?;
     if (list != null && list.isNotEmpty) {
       items = <DynamicItemModel>[];
@@ -159,7 +156,7 @@ class DynamicsDataModel {
         if (blockPromoted && _isPromotedDyn(item)) {
           continue;
         }
-                if (blockForward && _isForwardDyn(item)) {
+        if (blockForward && _isForwardDyn(item)) {
           continue;
         }
         if (enableFilter) {
@@ -252,18 +249,15 @@ class ItemModulesModel {
 
   ModuleAuthorModel? moduleAuthor;
   ModuleStatModel? moduleStat;
-  ModuleTag? moduleTag; // 也做opus的title用
+  ModuleTag? moduleTag;
 
-  // 动态
   ModuleDynamicModel? moduleDynamic;
-  // ModuleInterModel? moduleInter;
   ModuleInteraction? moduleInteraction;
   ModuleDispute? moduleDispute;
 
-  // 专栏
   ModuleTop? moduleTop;
   ModuleCollection? moduleCollection;
-  List<ModuleTag>? moduleExtend; // opus的tag
+  List<ModuleTag>? moduleExtend;
   List<ArticleContentModel>? moduleContent;
   ModuleBlocked? moduleBlocked;
   ModuleFold? moduleFold;
@@ -559,7 +553,7 @@ class ModuleAuthorModel extends Avatar {
 
   ModuleAuthorModel.fromJson(Map<String, dynamic> json) : super.fromJson(json) {
     if (json['official'] != null) {
-      officialVerify ??= BaseOfficialVerify.fromJson(json['official']); // opus
+      officialVerify ??= BaseOfficialVerify.fromJson(json['official']);
     }
     pubAction = json['pub_action'];
     pubTime = nonNullOrEmptyString(json['pub_time']);
