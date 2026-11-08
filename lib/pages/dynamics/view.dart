@@ -33,7 +33,6 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   @override
   bool get wantKeepAlive => true;
 
-  // 头像按钮
   Widget _createAvatarBtn({bool isRight = true}) =>
       Container(
         width: 34,
@@ -43,9 +42,8 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           onTap: () {
             final idx = _mainController.navigationBars.indexOf(NavigationBarType.mine);
             if (idx != -1) {
+              // 通过修改 index 触发底栏高亮
               _mainController.selectedIndex.value = idx;
-              // 加上跳转，解决页面内容不切换的问题
-              _mainController.pageController.jumpToPage(idx); 
             }
           },
           customBorder: const CircleBorder(),
@@ -183,8 +181,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
                     child: TabBar(
                       dividerHeight: 0,
                       isScrollable: true,
-                      // 居中排列标签
-                      tabAlignment: TabAlignment.center, 
+                      tabAlignment: TabAlignment.center, // 居中排列标签
                       dividerColor: Colors.transparent,
                       labelColor: colorScheme.primary,
                       indicatorColor: colorScheme.primary,
@@ -212,15 +209,15 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (checkPage) return false;
-          // 修复：移除 depth == 0 限制，只要发生垂直滚动就触发
           if (notification is ScrollUpdateNotification) {
-            if (notification.metrics.axis == Axis.vertical) {
-              final delta = notification.scrollDelta ?? 0;
-              if (delta > 0 && !_hideAppBar && notification.metrics.pixels > 0) {
-                setState(() => _hideAppBar = true);
-              } else if (delta < 0 && _hideAppBar) {
-                setState(() => _hideAppBar = false);
-              }
+            final delta = notification.scrollDelta ?? 0;
+            // 向下滑动（看新内容），隐藏顶栏
+            if (delta > 0 && !_hideAppBar && notification.metrics.pixels > 0) {
+              setState(() => _hideAppBar = true);
+            } 
+            // 向上滑动（看历史），显示顶栏
+            else if (delta < 0 && _hideAppBar) {
+              setState(() => _hideAppBar = false);
             }
           }
           return false;
