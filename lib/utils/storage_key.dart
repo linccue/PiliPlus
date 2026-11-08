@@ -5,6 +5,8 @@ abstract final class SettingBoxKey {
 static const blockAdJumpDynamics = 'blockAdJumpDynamics';
 static const blockLiveReminderDynamics = 'blockLiveReminderDynamics';
 static const blockPromotedDynamics = 'blockPromotedDynamics';
+    static bool get blockForwardDynamics =>
+      GStorage.setting.get(SettingBoxKey.blockForwardDynamics, defaultValue: false);
     static const blockForwardDynamics = 'blockForwardDynamics';
   static const String btmProgressBehavior = 'btmProgressBehavior',
       defaultVideoQa = 'defaultVideoQa',
