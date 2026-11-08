@@ -33,6 +33,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   @override
   bool get wantKeepAlive => true;
 
+  // 左上角头像按钮
   Widget _createAvatarBtn({bool isRight = true}) =>
       Container(
         width: 34,
@@ -42,9 +43,8 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           onTap: () {
             final idx = _mainController.navigationBars.indexOf(NavigationBarType.mine);
             if (idx != -1) {
-              _mainController.selectedIndex.value = idx;
-              // ⚠️ 注意：如果你在 main/view.dart 里找到了切换页面的代码，请填在这里：
-              // 比如：_mainController.changePage(idx); 或者类似的方法
+              // 使用 setIndex 方法，确保底栏高亮和 PageView 页面同步切换
+              _mainController.setIndex(idx);
             }
           },
           customBorder: const CircleBorder(),
@@ -182,7 +182,8 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
                     child: TabBar(
                       dividerHeight: 0,
                       isScrollable: true,
-                      tabAlignment: TabAlignment.center, // 居中排列标签
+                      // 居中排列标签，使用 fill 可以避免少标签时挤在左边
+                      tabAlignment: TabAlignment.center,
                       dividerColor: Colors.transparent,
                       labelColor: colorScheme.primary,
                       indicatorColor: colorScheme.primary,
@@ -210,14 +211,12 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (checkPage) return false;
+          // 监听所有的更新通知，不再限制 depth 和 axis
           if (notification is ScrollUpdateNotification) {
             final delta = notification.scrollDelta ?? 0;
-            // 向下滑动（看新内容），隐藏顶栏
             if (delta > 0 && !_hideAppBar && notification.metrics.pixels > 0) {
               setState(() => _hideAppBar = true);
-            } 
-            // 向上滑动（看历史），显示顶栏
-            else if (delta < 0 && _hideAppBar) {
+            } else if (delta < 0 && _hideAppBar) {
               setState(() => _hideAppBar = false);
             }
           }
