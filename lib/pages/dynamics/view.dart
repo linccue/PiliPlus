@@ -56,9 +56,9 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
                 _mainController.controller.jumpToPage(idx);
               }
               
-              // 4. 瞬间恢复底栏的隐藏状态，不给用户视觉闪烁的机会
-              _mainController.showBottomBar?.value = oldShow;
-              _mainController.barOffset?.value = oldOffset;
+              // 4. 瞬间恢复底栏的隐藏状态，加上 ?? 兜底防止空安全报错
+              _mainController.showBottomBar?.value = oldShow ?? false;
+              _mainController.barOffset?.value = oldOffset ?? 0.0;
             }
           },
           customBorder: const CircleBorder(),
