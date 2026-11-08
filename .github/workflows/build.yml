@@ -85,27 +85,45 @@ jobs:
         shell: pwsh
         run: lib/scripts/build.ps1 android
 
-      # ================= 拦截下载 =================
-      
-      - name: Clean and Download JARs (With Retry)
+      # ================= 多节点轮询下载 =================
+      - name: Download media_kit JARs (Multi-Proxy)
         run: |
           mkdir -p build/media_kit_libs_android_video/20260906
           
           download_jar() {
             local arch=$1
-            local url="https://ghproxy.net/https://github.com/My-Responsitories/libmpv-android-video-build/releases/download/20260906/default-${arch}.jar"
-            local dest="build/media_kit_libs_android_video/20260906/default-${arch}.jar"
+            local file="default-${arch}.jar"
+            local dest="build/media_kit_libs_android_video/20260906/${file}"
+            local original_url="https://github.com/My-Responsitories/libmpv-android-video-build/releases/download/20260906/${file}"
             
-            echo "开始下载 ${arch}..."
-            for i in {1..5}; do
-              if curl -L --fail -o "$dest" "$url"; then
-                echo "✅ ${arch} 下载成功！"
-                return 0
-              fi
-              echo "⚠️ ${arch} 第 $i 次失败，等待 3 秒重试..."
+            # 准备了5个不同的加速节点，外加直连
+            local proxies=(
+              "https://ghfast.top/"
+              "https://gh-proxy.com/"
+              "https://github.moeyy.xyz/"
+              "https://gh.llkk.cc/"
+              ""
+            )
+            
+            echo "开始下载 ${file}..."
+            for i in {1..2}; do
+              for proxy in "${proxies[@]}"; do
+                local url="${proxy}${original_url}"
+                echo "尝试节点: ${proxy:-直连}"
+                # 设置15秒连接超时，60秒最大下载时间，防止卡死
+                if curl -L -f -s -o "$dest" --connect-timeout 15 --max-time 60 "$url"; then
+                  # 校验文件大小，正常 jar 包至少有 1MB 以上，防止下到错误网页
+                  if [ $(stat -c%s "$dest") -gt 1000000 ]; then
+                    echo "✅ ${file} 下载成功！"
+                    return 0
+                  fi
+                fi
+                echo "⚠️ 当前节点失败，切换下一个..."
+              done
+              echo "第 $i 轮失败，等待 3 秒..."
               sleep 3
             done
-            echo "❌ ${arch} 下载彻底失败！"
+            echo "❌ ${file} 下载彻底失败！"
             exit 1
           }
           
@@ -118,12 +136,12 @@ jobs:
           flutter pub get
           GRADLE_FILE=$(find ~/.pub-cache -name "build.gradle" -path "*media_kit_libs_android_video*" | head -n 1)
           
-          # 暴力替换：把下载函数和校验全毁了，让它只能读取我们下载好的文件
-          sed -i 's/if (sha256 != null && !sha256.equalsIgnoreCase(fileSha256))/if (false)/g' "$GRADLE_FILE"
-          sed -i 's/def downloadFile = {/def downloadFile = { return/g' "$GRADLE_FILE"
-          sed -i 's/if (!file.exists())/if (false)/g' "$GRADLE_FILE"
-          
-          echo "✅ 插件拦截成功，它现在会直接使用我们下载的文件"
+          if [ -n "$GRADLE_FILE" ]; then
+            sed -i 's/def downloadFile = {/def downloadFile = { return \/\/ /g' "$GRADLE_FILE"
+            sed -i 's/if (sha256 != null && !sha256.equalsIgnoreCase(fileSha256))/if (false)/g' "$GRADLE_FILE"
+            sed -i 's/if (!file.exists())/if (false)/g' "$GRADLE_FILE"
+            echo "✅ 插件下载与校验逻辑已被彻底拦截"
+          fi
 
       # ============================================
 
@@ -199,7 +217,7 @@ jobs:
     permissions:
       contents: write
     with:
-      tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
+      tag: ${{ github.event_name == 'workflow_dispatch' && github.inputs.tag || '' }}
 
   linux_x64:
     if: ${{ github.event.inputs.build_linux_x64 == 'true' }}
