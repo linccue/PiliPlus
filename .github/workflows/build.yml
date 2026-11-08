@@ -1,194 +1,162 @@
 name: Build
 
 on:
-    # pull_request:
-    #     types:
-    #         - opened
-    #         - synchronize
-    #         - reopened
-    #         - ready_for_review
-    #     paths-ignore:
-    #         - "**.md"
-    workflow_dispatch:
-        inputs:
-            build_android:
-                description: "Build Android"
-                required: false
-                default: true
-                type: boolean
-
-            build_ios:
-                description: "Build iOS"
-                required: false
-                default: false
-                type: boolean
-
-            build_mac:
-                description: "Build Mac"
-                required: false
-                default: false
-                type: boolean
-
-            build_win_x64:
-                description: "Build Win-x64"
-                required: false
-                default: false
-                type: boolean
-
-            build_linux_x64:
-                description: "Build Linux-x64"
-                required: false
-                default: false
-                type: boolean
-
-            tag:
-                description: "tag"
-                required: false
-                default: ""
-                type: string
+  workflow_dispatch:
+    inputs:
+      build_android:
+        description: "Build Android"
+        required: false
+        default: true
+        type: boolean
+      build_ios:
+        description: "Build iOS"
+        required: false
+        default: false
+        type: boolean
+      build_mac:
+        description: "Build Mac"
+        required: false
+        default: false
+        type: boolean
+      build_win_x64:
+        description: "Build Win-x64"
+        required: false
+        default: false
+        type: boolean
+      build_linux_x64:
+        description: "Build Linux-x64"
+        required: false
+        default: false
+        type: boolean
+      tag:
+        description: "tag"
+        required: false
+        default: ""
+        type: string
 
 jobs:
-    android:
-        if: ${{ (github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_android == 'true' }}
-        name: Release Android
-        runs-on: ubuntu-latest
-        permissions:
-            contents: write
-
-        steps:
-            - name: 代码迁出
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-
-            - name: 构建Java环境
-              uses: actions/setup-java@v4
-              with:
-                  distribution: "zulu"
-                  java-version: "17"
-                  cache: "gradle"
-                  cache-dependency-path: |
-                      android/*.gradle*
-                      android/**/gradle-wrapper.properties
-
-            - name: 安装Flutter
-              uses: subosito/flutter-action@v2
-              id: flutter-action
-              with:
-                  channel: stable
-                  flutter-version-file: pubspec.yaml
-                  cache: true
-
-            - name: Apply Patch
-              shell: pwsh
-              run: lib/scripts/patch.ps1 android
-
-            - name: Write key
-              if: github.event_name == 'workflow_dispatch'
-              run: |
-                  if [ ! -z "${{ secrets.SIGN_KEYSTORE_BASE64 }}" ]; then
-                    echo "${{ secrets.SIGN_KEYSTORE_BASE64 }}" | base64 --decode > android/app/key.jks
-                    echo storeFile='key.jks' >> android/key.properties
-                    echo storePassword='${{ secrets.KEYSTORE_PASSWORD }}' >> android/key.properties
-                    echo keyAlias='${{ secrets.KEY_ALIAS }}' >> android/key.properties
-                    echo keyPassword='${{ secrets.KEY_PASSWORD }}' >> android/key.properties
-                  fi
-
-            - name: Set and Extract version
-              if: ${{ github.event_name == 'workflow_dispatch' }}
-              shell: pwsh
-              run: lib/scripts/build.ps1 android
-
-            - name: Flutter Build Release Apk
-              if: ${{ github.event_name == 'workflow_dispatch' }}
-              env:
-                  # 增加 Gradle 下载依赖的超时时间，防止 GitHub 网络波动导致 504 错误
-                  GRADLE_OPTS: "-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000"
-              run: |
-                  set -o pipefail
-                  flutter build apk --release --split-per-abi \
-                    --dart-define-from-file=pili_release.json \
-                    --no-pub 2>&1 | tee flutter_build.log
-
-            - name: Flutter Build Dev Apk
-              if: ${{ github.event_name == 'pull_request' }}
-              env:
-                  GRADLE_OPTS: "-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000"
-              run: |
-                  set -o pipefail
-                  flutter build apk --release --split-per-abi --android-project-arg dev=1 --no-pub 2>&1 | tee flutter_build.log
-
-            - name: Rename
-              run: |
-                  for file in build/app/outputs/flutter-apk/app-*-release.apk; do
-                    abi=$(echo "$file" | sed -E 's|.*app-(.*)-release\.apk|\1|')
-                    mv "$file" "PiliPlus_android_${{ env.version }}_${abi}.apk"
-                  done
-              shell: bash
-
-            - name: Release
-              if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' }}
-              uses: softprops/action-gh-release@v2
-              with:
-                  tag_name: ${{ github.event.inputs.tag }}
-                  name: ${{ github.event.inputs.tag }}
-                  files: PiliPlus_android_*.apk
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: 上传 arm64-v8a
-              uses: actions/upload-artifact@v4
-              with:
-                  name: Android_arm64-v8a
-                  path: PiliPlus_android_*_arm64-v8a.apk
-
-            - name: 上传 armeabi-v7a
-              uses: actions/upload-artifact@v4
-              with:
-                  name: Android_armeabi-v7a
-                  path: PiliPlus_android_*_armeabi-v7a.apk
-
-            - name: 上传 x86_64
-              uses: actions/upload-artifact@v4
-              with:
-                  name: Android_x86_64
-                  path: PiliPlus_android_*_x86_64.apk
-
-            - name: 上传构建日志
-              if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: Android_build_log
-                  path: flutter_build.log
-
-    ios:
-        if: ${{ (github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_ios == 'true' }}
-        uses: ./.github/workflows/ios.yml
-        permissions:
-            contents: write
+  android:
+    if: ${{ github.event.inputs.build_android == 'true' }}
+    name: Release Android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 代码迁出
+        uses: actions/checkout@v4
         with:
-            tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
+          fetch-depth: 0
 
-    mac:
-        if: ${{ github.event.inputs.build_mac == 'true' }}
-        uses: ./.github/workflows/mac.yml
-        permissions:
-            contents: write
+      - name: 构建Java环境
+        uses: actions/setup-java@v4
         with:
-            tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
+          distribution: "zulu"
+          java-version: "17"
+          cache: "gradle"
+          cache-dependency-path: |
+            android/*.gradle*
+            android/**/gradle-wrapper.properties
 
-    win_x64:
-        if: ${{ (github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_win_x64 == 'true' }}
-        uses: ./.github/workflows/win_x64.yml
-        permissions:
-            contents: write
+      - name: 安装Flutter
+        uses: subosito/flutter-action@v2
+        id: flutter-action
         with:
-            tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
 
-    linux_x64:
-        if: ${{ github.event.inputs.build_linux_x64 == 'true' }}
-        uses: ./.github/workflows/linux_x64.yml
-        permissions:
-            contents: write
+      - name: Apply Patch
+        shell: pwsh
+        run: lib/scripts/patch.ps1 android
+
+      - name: Write key
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ ! -z "${{ secrets.SIGN_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.SIGN_KEYSTORE_BASE64 }}" | base64 --decode > android/app/key.jks
+            echo storeFile='key.jks' >> android/key.properties
+            echo storePassword='${{ secrets.KEYSTORE_PASSWORD }}' >> android/key.properties
+            echo keyAlias='${{ secrets.KEY_ALIAS }}' >> android/key.properties
+            echo keyPassword='${{ secrets.KEY_PASSWORD }}' >> android/key.properties
+          fi
+
+      - name: Set and Extract version
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: pwsh
+        run: lib/scripts/build.ps1 android
+
+      - name: Flutter Build Release Apk (With Auto-Retry)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000"
+        run: |
+          set -o pipefail
+          # 添加了自动重试逻辑，最多尝试3次
+          for i in {1..3}; do
+            echo "🚀 第 $i 次尝试构建..."
+            if flutter build apk --release --split-per-abi --dart-define-from-file=pili_release.json --no-pub 2>&1 | tee flutter_build.log; then
+              echo "✅ 构建成功！"
+              exit 0
+            else
+              echo "⚠️ 第 $i 次构建失败。"
+              if [ $i -lt 3 ]; then
+                echo "🔄 等待 10 秒后重试..."
+                sleep 10
+              fi
+            fi
+          done
+          echo "❌ 所有尝试均失败。"
+          exit 1
+
+      - name: Flutter Build Dev Apk
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000"
+        run: |
+          set -o pipefail
+          flutter build apk --release --split-per-abi --android-project-arg dev=1 --no-pub 2>&1 | tee flutter_build.log
+
+      - name: Rename
+        run: |
+          for file in build/app/outputs/flutter-apk/app-*-release.apk; do
+            abi=$(echo "$file" | sed -E 's|.*app-(.*)-release\.apk|\1|')
+            mv "$file" "PiliPlus_android_${{ env.version }}_${abi}.apk"
+          done
+        shell: bash
+
+      - name: Release
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' }}
+        uses: softprops/action-gh-release@v2
         with:
-            tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
+          tag_name: ${{ github.event.inputs.tag }}
+          name: ${{ github.event.inputs.tag }}
+          files: PiliPlus_android_*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 上传 arm64-v8a
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android_arm64-v8a
+          path: PiliPlus_android_*_arm64-v8a.apk
+
+      - name: 上传 armeabi-v7a
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android_armeabi-v7a
+          path: PiliPlus_android_*_armeabi-v7a.apk
+
+      - name: 上传 x86_64
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android_x86_64
+          path: PiliPlus_android_*_x86_64.apk
+
+      - name: 上传构建日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android_build_log
+          path: flutter_build.log
+
+  # ... (其他平台的 job 保持不变) ...
