@@ -33,8 +33,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   @override
   bool get wantKeepAlive => true;
 
-  // 左上角头像按钮
-  Widget _createAvatarBtn({bool isRight = true}) =>
+    Widget _createAvatarBtn({bool isRight = true}) =>
       Container(
         width: 34,
         height: 34,
@@ -43,12 +42,24 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           onTap: () {
             final idx = _mainController.navigationBars.indexOf(NavigationBarType.mine);
             if (idx != -1) {
-              // 1. 直接修改底栏的高亮状态
+              // 1. 直接修改索引值，确保底栏高亮同步
               _mainController.selectedIndex.value = idx;
-              // 2. 强制 PageView 滑动到目标页面，不管底栏是否隐藏
+              
+              // 2. 强制使用 PageController 跳转页面（绕过 setIndex 的拦截）
               if (_mainController.controller.hasClients) {
                 _mainController.controller.jumpToPage(idx);
               }
+              
+              // 3. 延迟一帧再强制跳转一次（防止底栏隐藏动画导致第一下失效）
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_mainController.controller.hasClients) {
+                  _mainController.controller.animateToPage(
+                    idx,
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              });
             }
           },
           customBorder: const CircleBorder(),
