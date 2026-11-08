@@ -333,16 +333,17 @@ class AuthorPanel extends StatelessWidget {
                     }
                     
                     SmartDialog.showLoading(msg: '收藏中...');
-                    final res = await FavHttp.addFav(
-                      aid: aid,
-                      addFavFolderId: favId,
+                    final res = await FavHttp.favVideo(
+                      resources: 'aid:$aid',
+                      addIds: favId.toString(),
                     );
                     SmartDialog.dismiss();
                     
                     if (res.isSuccess) {
                       SmartDialog.showToast('已加入默认收藏夹');
                     } else {
-                      SmartDialog.showToast('收藏失败: ${res.message}');
+                      // 如果 res 没有 message 属性会报错，换成 errorMsg 或直接写死
+                      SmartDialog.showToast('收藏失败'); 
                     }
                   },
                   minLeadingWidth: 0,
