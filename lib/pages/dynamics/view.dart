@@ -48,8 +48,8 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
             }
           },
           customBorder: const CircleBorder(),
-          child: PendantAvatar(
-            Accounts.main.face ?? '', // 修复：去掉了 face: 直接传位置参数
+                   child: PendantAvatar(
+            Accounts.main.userInfo?.face ?? '',
             size: 34,
           ),
         ),
