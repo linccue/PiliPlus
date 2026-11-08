@@ -47,6 +47,56 @@ class DynamicsDataModel {
 
   static bool antiGoodsDyn = Pref.antiGoodsDyn;
 
+  // ===== 新增：四个屏蔽判断方法（必须写在类内部）=====
+  // 1. 无权查看 / 充电专属
+  static bool _isInaccessibleDyn(DynamicItemModel item) {
+    final type = item.type;
+    if (type == 'DYNAMIC_TYPE_SUBSCRIPTION' ||
+        type == 'DYNAMIC_TYPE_SUBSCRIPTION_NEW') {
+      return true;
+    }
+    if (item.visible == false) return true;
+    if (item.modules.moduleBlocked != null) return true;
+    final major = item.modules.moduleDynamic?.major;
+    if (major?.blocked != null) return true;
+    if (major?.subscriptionNew != null) return true;
+    return false;
+  }
+
+  // 2. 跳转广告
+  static bool _isAdJumpDyn(DynamicItemModel item) {
+    final type = item.type;
+    return type == 'DYNAMIC_TYPE_AD' || type == 'DYNAMIC_TYPE_BANNER';
+  }
+
+  // 3. 直播预约 / 直播推荐
+  static bool _isLiveReminderDyn(DynamicItemModel item) {
+    final type = item.type;
+    if (type == 'DYNAMIC_TYPE_LIVE' || type == 'DYNAMIC_TYPE_LIVE_RCMD') {
+      return true;
+    }
+    final major = item.modules.moduleDynamic?.major;
+    if (major?.liveRcmd != null) return true;
+    if (major?.live != null) return true;
+    if (major?.subscriptionNew?.liveRcmd != null) return true;
+    if (item.modules.moduleDynamic?.additional?.reserve != null) return true;
+    return false;
+  }
+
+  // 4. 推广（乱序、无投稿时间）
+  static bool _isPromotedDyn(DynamicItemModel item) {
+    final type = item.type;
+    if (type == 'DYNAMIC_TYPE_UGC_SEASON' ||
+        type == 'DYNAMIC_TYPE_COMMON_SQUARE') {
+      return true;
+    }
+    final additional = item.modules.moduleDynamic?.additional;
+    if (additional?.common != null) return true;
+    if (additional?.ugc != null) return true;
+    if (additional?.match != null) return true;
+    return false;
+  }
+
   DynamicsDataModel.fromJson(
     Map<String, dynamic> json, {
     DynamicsTabType type = DynamicsTabType.all,
@@ -54,7 +104,6 @@ class DynamicsDataModel {
   }) {
     hasMore = json['has_more'];
 
-    // 读取四个开关（每次解析读取一次，切换开关后下拉刷新即可生效）
     final blockInaccessible = Pref.blockInaccessibleDynamics;
     final blockAdJump = Pref.blockAdJumpDynamics;
     final blockLiveReminder = Pref.blockLiveReminderDynamics;
@@ -74,19 +123,15 @@ class DynamicsDataModel {
                     'ADDITIONAL_TYPE_GOODS')) {
           continue;
         }
-        // 1. 屏蔽无权查看 / 充电专属
         if (blockInaccessible && _isInaccessibleDyn(item)) {
           continue;
         }
-        // 2. 屏蔽跳转广告
         if (blockAdJump && _isAdJumpDyn(item)) {
           continue;
         }
-        // 3. 屏蔽直播预约 / 直播推荐
         if (blockLiveReminder && _isLiveReminderDyn(item)) {
           continue;
         }
-        // 4. 屏蔽推广（乱序、无投稿时间）
         if (blockPromoted && _isPromotedDyn(item)) {
           continue;
         }
@@ -116,7 +161,6 @@ class DynamicsDataModel {
     total = safeToInt(json['total']);
   }
 }
-
 // 单个动态
 class DynamicItemModel {
   Basic? basic;
