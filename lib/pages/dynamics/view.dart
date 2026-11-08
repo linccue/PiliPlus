@@ -8,11 +8,11 @@ import 'package:PiliPlus/models/dynamics/up.dart';
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/dynamics/controller.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/up_panel.dart';
-import 'package:PiliPlus/pages/dynamics_create/view.dart';
 import 'package:PiliPlus/pages/dynamics_tab/view.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
+import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart' hide DraggableScrollableSheet;
 
@@ -28,6 +28,9 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   final _dynamicsController = Get.putOrFind(DynamicsController.new);
   UpPanelPosition get upPanelPosition => _dynamicsController.upPanelPosition;
   late final MainController _mainController = Get.find<MainController>();
+
+  // 控制顶栏显隐状态
+  bool _hideAppBar = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -124,9 +127,12 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
     Widget? leading;
     Widget actions;
 
+    // 从 Pref 读取用户自定义的标签列表
+    final tabTypes = Pref.dynamicsTabs;
+
     Widget child = tabBarView(
       controller: _dynamicsController.tabController,
-      children: Pref.dynamicsTabs
+      children: tabTypes
           .map((e) => DynamicsTabPage(dynamicsType: e))
           .toList(),
     );
@@ -172,19 +178,18 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       backgroundColor: Colors.transparent,
       drawer: drawer,
       endDrawer: endDrawer,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              floating: true,
-              snap: true,
-              pinned: false,
-              toolbarHeight: 50,
-              titleSpacing: 0,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              backgroundColor: colorScheme.surface,
-              title: Row(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(_hideAppBar ? 0 : 50),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          height: _hideAppBar ? 0 : 50,
+          child: ClipRect(
+            child: OverflowBox(
+              minHeight: 50,
+              maxHeight: 50,
+              alignment: Alignment.bottomCenter,
+              child: Row(
                 children: [
                   ?leading,
                   Expanded(
@@ -201,7 +206,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
                           TabBarTheme.of(context).labelStyle
                               ?.copyWith(fontSize: 13) ??
                           const TextStyle(fontSize: 13),
-                     tabs: Pref.dynamicsTabs
+                      tabs: tabTypes
                           .map((e) => Tab(text: e.label))
                           .toList(),
                       onTap: (index) {
@@ -215,9 +220,23 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
                 ],
               ),
             ),
-          ];
+          ),
+        ),
+      ),
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          if (checkPage) return false;
+          // 根据滚动方向动态改变顶栏高度
+          if (notification.direction == ScrollDirection.forward) {
+            // 向上滑动（看历史），显示顶栏
+            if (_hideAppBar) setState(() => _hideAppBar = false);
+          } else if (notification.direction == ScrollDirection.reverse) {
+            // 向下滑动（看新内容），隐藏顶栏
+            if (!_hideAppBar) setState(() => _hideAppBar = true);
+          }
+          return false;
         },
-        body: onBuild(child),
+        child: onBuild(child),
       ),
     );
   }
