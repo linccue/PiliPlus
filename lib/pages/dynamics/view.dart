@@ -33,7 +33,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   @override
   bool get wantKeepAlive => true;
 
-    Widget _createAvatarBtn({bool isRight = true}) =>
+      Widget _createAvatarBtn({bool isRight = true}) =>
       Container(
         width: 34,
         height: 34,
@@ -42,24 +42,23 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           onTap: () {
             final idx = _mainController.navigationBars.indexOf(NavigationBarType.mine);
             if (idx != -1) {
-              // 1. 直接修改索引值，确保底栏高亮同步
-              _mainController.selectedIndex.value = idx;
+              // 1. 保存当前的底栏隐藏状态
+              final oldShow = _mainController.showBottomBar?.value;
+              final oldOffset = _mainController.barOffset?.value;
               
-              // 2. 强制使用 PageController 跳转页面（绕过 setIndex 的拦截）
+              // 2. 临时把底栏设为显示，骗过 setIndex 内部的隐藏拦截逻辑
+              _mainController.showBottomBar?.value = true;
+              _mainController.barOffset?.value = 0.0;
+              
+              // 3. 调用主控制器的正常跳转
+              _mainController.setIndex(idx);
               if (_mainController.controller.hasClients) {
                 _mainController.controller.jumpToPage(idx);
               }
               
-              // 3. 延迟一帧再强制跳转一次（防止底栏隐藏动画导致第一下失效）
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (_mainController.controller.hasClients) {
-                  _mainController.controller.animateToPage(
-                    idx,
-                    duration: const Duration(milliseconds: 150),
-                    curve: Curves.easeInOut,
-                  );
-                }
-              });
+              // 4. 瞬间恢复底栏的隐藏状态，不给用户视觉闪烁的机会
+              _mainController.showBottomBar?.value = oldShow;
+              _mainController.barOffset?.value = oldOffset;
             }
           },
           customBorder: const CircleBorder(),
