@@ -47,7 +47,6 @@ class DynamicsDataModel {
 
   static bool antiGoodsDyn = Pref.antiGoodsDyn;
 
-  // ===== 新增：四个屏蔽判断方法（必须写在类内部）=====
   // 1. 无权查看 / 充电专属
   static bool _isInaccessibleDyn(DynamicItemModel item) {
     final type = item.type;
@@ -161,6 +160,7 @@ class DynamicsDataModel {
     total = safeToInt(json['total']);
   }
 }
+
 // 单个动态
 class DynamicItemModel {
   Basic? basic;
@@ -187,64 +187,6 @@ class DynamicItemModel {
     }
     type = json['type'];
     visible = json['visible'];
-      // 1. 无权查看 / 充电专属
-  static bool _isInaccessibleDyn(DynamicItemModel item) {
-    final type = item.type;
-    if (type == 'DYNAMIC_TYPE_SUBSCRIPTION' ||
-        type == 'DYNAMIC_TYPE_SUBSCRIPTION_NEW') {
-      return true;
-    }
-    // 动态不可见
-    if (item.visible == false) return true;
-    // 整条动态被屏蔽（无权查看占位卡片）
-    if (item.modules.moduleBlocked != null) return true;
-    // major 内 blocked / 充电专属
-    final major = item.modules.moduleDynamic?.major;
-    if (major?.blocked != null) return true;
-    if (major?.subscriptionNew != null) return true;
-    return false;
-  }
-
-  // 2. 跳转广告
-  static bool _isAdJumpDyn(DynamicItemModel item) {
-    final type = item.type;
-    return type == 'DYNAMIC_TYPE_AD' || type == 'DYNAMIC_TYPE_BANNER';
-  }
-
-  // 3. 直播预约 / 直播推荐
-  static bool _isLiveReminderDyn(DynamicItemModel item) {
-    final type = item.type;
-    if (type == 'DYNAMIC_TYPE_LIVE' || type == 'DYNAMIC_TYPE_LIVE_RCMD') {
-      return true;
-    }
-    final major = item.modules.moduleDynamic?.major;
-    if (major?.liveRcmd != null) return true;
-    if (major?.live != null) return true;
-    if (major?.subscriptionNew?.liveRcmd != null) return true;
-    // 预约卡片（B 站预约卡片基本是直播预约；若误伤可去掉这一行）
-    if (item.modules.moduleDynamic?.additional?.reserve != null) return true;
-    return false;
-  }
-
-  // 4. 推广（时间线乱序、无投稿时间）
-  static bool _isPromotedDyn(DynamicItemModel item) {
-    final type = item.type;
-    if (type == 'DYNAMIC_TYPE_UGC_SEASON' ||
-        type == 'DYNAMIC_TYPE_COMMON_SQUARE') {
-      return true;
-    }
-    final additional = item.modules.moduleDynamic?.additional;
-    // 推广卡片
-    if (additional?.common != null) return true;   // 非游戏类的 common 推广
-    if (additional?.ugc != null) return true;      // UGC 合集/活动推广
-    if (additional?.match != null) return true;    // 赛事推广
-
-    // 可选：按“无投稿时间”兜底判断（默认关闭，需要时取消注释）
-    // final author = item.modules.moduleAuthor;
-    // if (author?.pubTs == null && author?.pubTime == null) return true;
-
-    return false;
-  }
   }
 
   DynamicItemModel.fromOpusJson(Map<String, dynamic> json) {
