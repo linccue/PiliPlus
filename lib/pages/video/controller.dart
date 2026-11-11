@@ -436,6 +436,44 @@ class VideoDetailController extends GetxController
           ? 1
           : 0,
     );
+
+    // 尝试自动加载上次记忆的本地字幕
+    _autoLoadLocalSubtitle();
+  }
+
+  /// 记忆并自动加载本地字幕
+  Future<void> _autoLoadLocalSubtitle() async {
+    final path = GStorage.localCache.get('local_sub_path_${cid.value}') as String?;
+    if (path != null && path.isNotEmpty) {
+      final file = File(path);
+      if (file.existsSync()) {
+        // 延迟一下，等待视频基础信息加载和播放器初始化
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (isClosed) return;
+        
+        final fileName = path.split(Platform.pathSeparator).last;
+        final data = await loadFileSubtitle(path: path, fileName: fileName);
+        if (data != null) {
+          // 如果已经在列表里了就不重复加
+          final exists = subtitles.any((e) => e is LocalSubtitle && e.path == path);
+          if (!exists) {
+            subtitles.add(
+              LocalSubtitle(
+                path: path,
+                lan: '本地',
+                lanDoc: fileName,
+                subtitleUrl: '',
+              ),
+            );
+          }
+          // 找到索引并切换
+          final idx = subtitles.indexWhere((e) => e is LocalSubtitle && e.path == path);
+          if (idx != -1) {
+            await setSubtitle(idx + 1); // subtitles 对应的 index 从 1 开始
+          }
+        }
+      }
+    }
   }
 
   Future<void> getMediaList({
@@ -1061,6 +1099,9 @@ class VideoDetailController extends GetxController
     required String path,
     required String fileName,
   }) async {
+    // 只要手动调用了加载本地字幕，就存入缓存，记住这个 cid 对应的路径
+    GStorage.localCache.put('local_sub_path_${cid.value}', path);
+
     SubtitleData? data;
     final length = subtitles.length;
     if (SubtitleUtils.isJson(fileName)) {
