@@ -437,41 +437,35 @@ class VideoDetailController extends GetxController
           : 0,
     );
 
-    // 尝试自动加载上次记忆的本地字幕
-    _autoLoadLocalSubtitle();
-  }
-
-  /// 记忆并自动加载本地字幕
+     /// 记忆并自动加载用户手动选择的本地字幕
   Future<void> _autoLoadLocalSubtitle() async {
     final path = GStorage.localCache.get('local_sub_path_${cid.value}') as String?;
     if (path != null && path.isNotEmpty) {
       final file = File(path);
       if (file.existsSync()) {
-        // 延迟一下，等待视频基础信息加载和播放器初始化
+        // 延迟一下，等待播放器初始化完毕
         await Future.delayed(const Duration(milliseconds: 800));
         if (isClosed) return;
-        
+
         final fileName = path.split(Platform.pathSeparator).last;
+        // 解析字幕文件为 VTT 格式数据
         final data = await loadFileSubtitle(path: path, fileName: fileName);
+        
         if (data != null) {
-          // 如果已经在列表里了就不重复加
-          final exists = subtitles.any((e) => e is LocalSubtitle && e.path == path);
-          if (!exists) {
-            subtitles.add(
-              LocalSubtitle(
-                path: path,
-                lan: '本地',
-                lanDoc: fileName,
-                subtitleUrl: '',
-              ),
-            );
+          // 直接把解析好的数据挂载给播放器，不走系统自带的字幕列表
+          String subUri = data.id;
+          if (data.isData) {
+            subUri = 'memory://$subUri';
           }
-          // 找到索引并切换
-          final idx = subtitles.indexWhere((e) => e is LocalSubtitle && e.path == path);
-          if (idx != -1) {
-            await setSubtitle(idx + 1); // subtitles 对应的 index 从 1 开始
-          }
+          await plPlayerController.videoPlayerController?.setSubtitleTrack(
+            SubtitleTrack(subUri, fileName, '本地字幕', uri: true),
+          );
+          // 强行设为选中状态，防止 UI 冲突
+          vttSubtitlesIndex.value = -2; 
         }
+      } else {
+        // 如果文件被删了，清理无效缓存，防止下次加载报错
+        GStorage.localCache.delete('local_sub_path_${cid.value}');
       }
     }
   }
