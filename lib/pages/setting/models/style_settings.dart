@@ -25,7 +25,7 @@ import 'package:PiliPlus/models/common/theme/theme_type.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/pages/setting/models/model.dart';
-import 'package:PiliPlus/pages/setting/pages/dynamics_tab_setting.dart'; // <-- 新增的导入
+import 'package:PiliPlus/pages/setting/pages/dynamics_tab_setting.dart';
 import 'package:PiliPlus/pages/setting/slide_color_picker.dart';
 import 'package:PiliPlus/pages/setting/widgets/dual_slider_dialog.dart';
 import 'package:PiliPlus/pages/setting/widgets/multi_select_dialog.dart';
@@ -415,7 +415,8 @@ List<SettingsModel> get styleSettings => [
     leading: const Icon(Icons.toc_outlined),
   ),
   // ===============================
-      // 新增：无痕图标快捷开关
+  
+  // 新增：无痕图标快捷开关
   const SwitchModel(
     title: '动态页显示无痕图标',
     subtitle: '在动态页顶栏快捷切换无痕模式',
@@ -423,19 +424,31 @@ List<SettingsModel> get styleSettings => [
     setKey: SettingBoxKey.showIncognitoInDynamics,
     defaultVal: false,
   ),
-      // 替换为你现在的这段：
-  PopupModel<bool>(
+  // 无痕图标位置设置
+  NormalModel(
     title: '无痕图标显示位置',
     leading: const Icon(Icons.format_align_left),
-    getSubtitle: () => '当前：${Pref.incognitoOnLeft ? '左侧' : '右侧'}（在原有按钮的内侧）',
-    value: () => Pref.incognitoOnLeft,
-    items: const [true, false], // true 为左侧，false 为右侧
-    onSelected: (value, setState) {
-      GStorage.setting
-          .put(SettingBoxKey.incognitoOnLeft, value)
-          .whenComplete(setState);
+    getSubtitle: () =>
+        '当前：${Pref.incognitoOnLeft ? '左侧' : '右侧'}（在原有按钮的内侧）',
+    onTap: (context, setState) async {
+      final res = await showDialog<bool>(
+        context: context,
+        builder: (context) => SelectDialog<bool>(
+          title: '选择显示位置',
+          value: Pref.incognitoOnLeft,
+          values: const [
+            (true, '左侧'),
+            (false, '右侧'),
+          ],
+        ),
+      );
+      if (res != null) {
+        await GStorage.setting.put(SettingBoxKey.incognitoOnLeft, res);
+        setState();
+      }
     },
   ),
+
   NormalModel(
     onTap: (context, setState) => Get.toNamed(
       '/barSetting',
