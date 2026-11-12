@@ -53,6 +53,19 @@ abstract final class Pref {
   static final Box _video = GStorage.video;
   static final Box _localCache = GStorage.localCache;
 
+  // ===== 动态标签页自定义 =====
+  static List<DynamicsTabType> get dynamicsTabs {
+    final list = _setting.get(SettingBoxKey.dynamicsTabs) as List?;
+    if (list != null && list.isNotEmpty) {
+      final tabs = list
+          .map((e) => DynamicsTabType.values[e as int])
+          .toList();
+      if (tabs.isNotEmpty) return tabs;
+    }
+    return DynamicsTabType.values;
+  }
+  // ===========================
+
   static UserInfoData? get userInfoCache =>
       GStorage.userInfo.get('userInfoCache');
 
@@ -1148,7 +1161,17 @@ abstract final class Pref {
   static bool get enableDebugDialog =>
       _setting.get(SettingBoxKey.enableDebugDialog, defaultValue: false);
 
+
+  // 动态页显示无痕图标
+  static bool get showIncognitoInDynamics =>
+      _setting.get(SettingBoxKey.showIncognitoInDynamics, defaultValue: false);
+
+  // 无痕图标显示位置（左侧或右侧）
+  static bool get incognitoOnLeft =>
+      _setting.get(SettingBoxKey.incognitoOnLeft, defaultValue: true);
+
   static bool get autoWearMedal =>
       _setting.get(SettingBoxKey.autoWearMedal, defaultValue: false);
+
 
 }

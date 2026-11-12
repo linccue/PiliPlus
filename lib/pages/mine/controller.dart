@@ -167,7 +167,9 @@ class MineController extends GetxController with AccountMixin {
     }
     final newVal = !anonymity.value;
     anonymity.value = newVal;
+
     if (newVal) {
+      // 进入无痕模式
       SmartDialog.dismiss();
       SmartDialog.show<bool>(
         clickMaskDismiss: false,
@@ -222,7 +224,7 @@ class MineController extends GetxController with AccountMixin {
                       const SizedBox(width: 10),
                       TextButton(
                         onPressed: () {
-                          SmartDialog.dismiss();
+                          SmartDialog.dismiss(result: false);
                           SmartDialog.showToast('已设为临时无痕模式');
                         },
                         child: Text('仅本次（默认）', style: style),
@@ -235,24 +237,25 @@ class MineController extends GetxController with AccountMixin {
           );
         },
       ).then((res) {
-        if (res == false) {
-          return;
+        if (res == true) {
+          Accounts.set(AccountType.heartbeat, AnonymousAccount());
+        } else {
+          Accounts.accountMode[AccountType.heartbeat.index] = AnonymousAccount();
         }
-        res == true
-            ? Accounts.set(AccountType.heartbeat, AnonymousAccount())
-            : Accounts.accountMode[AccountType.heartbeat.index] =
-                  AnonymousAccount();
       });
     } else {
-      Accounts.set(AccountType.heartbeat, Accounts.main);
-      SmartDialog.dismiss(result: false);
-      SmartDialog.show(
+      // 退出无痕模式
+      SmartDialog.dismiss();
+      SmartDialog.show<bool>(
         clickMaskDismiss: false,
         usePenetrate: true,
-        displayTime: const Duration(seconds: 1),
+        displayTime: const Duration(seconds: 2),
         alignment: Alignment.bottomCenter,
         builder: (context) {
           final theme = Theme.of(context);
+          final style = TextStyle(
+            color: theme.colorScheme.onSecondaryContainer,
+          );
           return ColoredBox(
             color: theme.colorScheme.secondaryContainer,
             child: Padding(
@@ -262,17 +265,57 @@ class MineController extends GetxController with AccountMixin {
                 right: 20,
                 bottom: MediaQuery.viewPaddingOf(context).bottom + 15,
               ),
-              child: Row(
-                children: [
-                  const Icon(MdiIcons.incognitoOff, size: 20),
-                  const SizedBox(width: 10),
-                  Text('已退出无痕模式', style: theme.textTheme.titleMedium),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      const Icon(MdiIcons.incognitoOff, size: 20),
+                      const SizedBox(width: 10),
+                      Text('已退出无痕模式', style: theme.textTheme.titleMedium),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '默认仅本次退出，重启应用仍保持无痕。\n'
+                    '保存为永久则彻底关闭无痕模式。',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          SmartDialog.dismiss(result: true);
+                          SmartDialog.showToast('已设为永久退出无痕');
+                        },
+                        child: Text('保存为永久', style: style),
+                      ),
+                      const SizedBox(width: 10),
+                      TextButton(
+                        onPressed: () {
+                          SmartDialog.dismiss(result: false);
+                          SmartDialog.showToast('已设为仅本次退出无痕');
+                        },
+                        child: Text('仅本次（默认）', style: style),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           );
         },
-      );
+      ).then((res) {
+        if (res == true) {
+          // 永久退出：修改持久化账号
+          Accounts.set(AccountType.heartbeat, Accounts.main);
+        } else {
+          // 仅本次退出 / 超时未点：仅修改当前内存状态，重启后失效
+          Accounts.accountMode[AccountType.heartbeat.index] = Accounts.main;
+        }
+      });
     }
   }
 

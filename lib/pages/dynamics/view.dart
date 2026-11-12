@@ -1,16 +1,20 @@
 import 'package:PiliPlus/common/widgets/scroll_physics.dart' show tabBarView;
+import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamics_type.dart';
 import 'package:PiliPlus/models/common/dynamic/up_panel_position.dart';
+import 'package:PiliPlus/models/common/nav_bar_config.dart';
 import 'package:PiliPlus/models/dynamics/up.dart';
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/dynamics/controller.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/up_panel.dart';
-import 'package:PiliPlus/pages/dynamics_create/view.dart';
 import 'package:PiliPlus/pages/dynamics_tab/view.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
+import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
+import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:get/get.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_ui/material_ui.dart' hide DraggableScrollableSheet;
 
 class DynamicsPage extends StatefulWidget {
@@ -26,27 +30,25 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   UpPanelPosition get upPanelPosition => _dynamicsController.upPanelPosition;
   late final MainController _mainController = Get.find<MainController>();
 
+  bool _hideAppBar = false;
+
   @override
   bool get wantKeepAlive => true;
 
-  Widget _createDynamicBtn(ColorScheme colorScheme, {bool isRight = true}) =>
+  Widget _createAvatarBtn({bool isRight = true}) =>
       Container(
         width: 34,
         height: 34,
         margin: isRight ? const .only(right: 16) : const .only(left: 16),
-        child: IconButton(
-          tooltip: '发布动态',
-          style: ButtonStyle(
-            padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-            backgroundColor: WidgetStatePropertyAll(
-              colorScheme.secondaryContainer,
-            ),
-          ),
-          onPressed: () => CreateDynPanel.onCreateDyn(context),
-          icon: Icon(
-            Icons.add,
-            size: 18,
-            color: colorScheme.onSecondaryContainer,
+        child: GestureDetector(
+          onTap: () {
+            _mainController.toMinePage();
+          },
+          behavior: HitTestBehavior.opaque,
+          child: PendantAvatar(
+            Pref.userInfoCache?.face ??
+                'https://i0.hdslb.com/bfs/face/member/noface.jpg',
+            size: 34,
           ),
         ),
       );
@@ -98,17 +100,13 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
 
   @override
   bool onNotificationType1(UserScrollNotification notification) {
-    if (checkPage) {
-      return false;
-    }
+    if (checkPage) return false;
     return super.onNotificationType1(notification);
   }
 
   @override
   bool onNotificationType2(ScrollNotification notification) {
-    if (checkPage) {
-      return false;
-    }
+    if (checkPage) return false;
     return super.onNotificationType2(notification);
   }
 
@@ -123,9 +121,11 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
     Widget? leading;
     Widget actions;
 
+    final tabTypes = Pref.dynamicsTabs;
+
     Widget child = tabBarView(
       controller: _dynamicsController.tabController,
-      children: DynamicsTabType.values
+      children: tabTypes
           .map((e) => DynamicsTabPage(dynamicsType: e))
           .toList(),
     );
@@ -133,78 +133,129 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
     switch (upPanelPosition) {
       case .top:
         child = Column(
-          children: [
-            upPanelPart(colorScheme),
-            Expanded(child: child),
-          ],
+          children: [upPanelPart(colorScheme), Expanded(child: child)],
         );
-        actions = _createDynamicBtn(colorScheme);
+        actions = _createAvatarBtn();
       case .leftFixed:
         child = Row(
-          children: [
-            upPanelPart(colorScheme),
-            Expanded(child: child),
-          ],
+          children: [upPanelPart(colorScheme), Expanded(child: child)],
         );
-        actions = _createDynamicBtn(colorScheme);
+        actions = _createAvatarBtn();
       case .rightFixed:
         child = Row(
-          children: [
-            Expanded(child: child),
-            upPanelPart(colorScheme),
-          ],
+          children: [Expanded(child: child), upPanelPart(colorScheme)],
         );
-        actions = _createDynamicBtn(colorScheme);
+        actions = _createAvatarBtn();
       case .leftDrawer:
         drawer = upPanelPart(colorScheme);
-        actions = _createDynamicBtn(colorScheme);
         leading = const DrawerButton();
+        actions = _createAvatarBtn();
       case .rightDrawer:
         endDrawer = upPanelPart(colorScheme);
-        leading = _createDynamicBtn(colorScheme, isRight: false);
+        leading = _createAvatarBtn(isRight: false);
         actions = const EndDrawerButton();
     }
+
+    // ===== 插入无痕模式图标 =====
+    if (Pref.showIncognitoInDynamics) {
+      final incognitoBtn = Obx(() {
+        final anonymity = MineController.anonymity.value;
+        return IconButton(
+          iconSize: 22,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          tooltip: "${anonymity ? '退出' : '进入'}无痕模式",
+          onPressed: MineController.onChangeAnonymity,
+          icon: anonymity
+              ? const Icon(MdiIcons.incognito)
+              : const Icon(MdiIcons.incognitoOff),
+        );
+      });
+
+      if (Pref.incognitoOnLeft) {
+        // 如果设置显示在左侧：放在 leading 的右边
+        if (leading != null) {
+          leading = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [leading!, incognitoBtn],
+          );
+        } else {
+          leading = incognitoBtn;
+        }
+      } else {
+        // 如果设置显示在右侧：放在 actions 的左边
+        actions = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [incognitoBtn, actions],
+        );
+      }
+    }
+    // ===========================
 
     return Scaffold(
       primary: false,
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.transparent,
-      appBar: PreferredSize(
-        preferredSize: const .fromHeight(50),
-        child: Row(
-          children: [
-            ?leading,
-            Expanded(
-              child: TabBar(
-                dividerHeight: 0,
-                isScrollable: true,
-                tabAlignment: .start,
-                dividerColor: Colors.transparent,
-                labelColor: colorScheme.primary,
-                indicatorColor: colorScheme.primary,
-                controller: _dynamicsController.tabController,
-                unselectedLabelColor: colorScheme.onSurface,
-                labelStyle:
-                    TabBarTheme.of(context).labelStyle
-                        ?.copyWith(fontSize: 13) ??
-                    const TextStyle(fontSize: 13),
-                tabs: DynamicsTabType.values
-                    .map((e) => Tab(text: e.label))
-                    .toList(),
-                onTap: (index) {
-                  if (!_dynamicsController.tabController.indexIsChanging) {
-                    _dynamicsController.animateToTop();
-                  }
-                },
-              ),
-            ),
-            actions,
-          ],
-        ),
-      ),
       drawer: drawer,
       endDrawer: endDrawer,
-      body: onBuild(child),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(_hideAppBar ? 0 : 50),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          height: _hideAppBar ? 0 : 50,
+          child: ClipRect(
+            child: OverflowBox(
+              minHeight: 50,
+              maxHeight: 50,
+              alignment: Alignment.bottomCenter,
+              child: Row(
+                children: [
+                  ?leading,
+                  Expanded(
+                    child: TabBar(
+                      dividerHeight: 0,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.center,
+                      dividerColor: Colors.transparent,
+                      labelColor: colorScheme.primary,
+                      indicatorColor: colorScheme.primary,
+                      controller: _dynamicsController.tabController,
+                      unselectedLabelColor: colorScheme.onSurface,
+                      labelStyle:
+                          TabBarTheme.of(context).labelStyle?.copyWith(
+                                fontSize: 13,
+                              ) ??
+                              const TextStyle(fontSize: 13),
+                      tabs: tabTypes.map((e) => Tab(text: e.label)).toList(),
+                      onTap: (index) {
+                        if (!_dynamicsController.tabController.indexIsChanging) {
+                          _dynamicsController.animateToTop();
+                        }
+                      },
+                    ),
+                  ),
+                  actions,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (checkPage) return false;
+          if (notification is ScrollUpdateNotification) {
+            final delta = notification.scrollDelta ?? 0;
+            if (delta > 0 && !_hideAppBar && notification.metrics.pixels > 0) {
+              setState(() => _hideAppBar = true);
+            } else if (delta < 0 && _hideAppBar) {
+              setState(() => _hideAppBar = false);
+            }
+          }
+          return false;
+        },
+        child: onBuild(child),
+      ),
     );
   }
 }

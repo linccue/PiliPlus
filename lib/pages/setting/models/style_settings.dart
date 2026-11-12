@@ -25,6 +25,7 @@ import 'package:PiliPlus/models/common/theme/theme_type.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/pages/setting/models/model.dart';
+import 'package:PiliPlus/pages/setting/pages/dynamics_tab_setting.dart';
 import 'package:PiliPlus/pages/setting/slide_color_picker.dart';
 import 'package:PiliPlus/pages/setting/widgets/dual_slider_dialog.dart';
 import 'package:PiliPlus/pages/setting/widgets/multi_select_dialog.dart';
@@ -406,6 +407,50 @@ List<SettingsModel> get styleSettings => [
     subtitle: '删除或调换首页标签页',
     leading: const Icon(Icons.toc_outlined),
   ),
+  // ===== 新增：动态标签页编辑 =====
+  NormalModel(
+    onTap: (context, setState) => Get.to(() => const DynamicsTabSettingPage()),
+    title: '动态标签页编辑',
+    subtitle: '自定义动态页顶部的标签与顺序',
+    leading: const Icon(Icons.toc_outlined),
+  ),
+  // ===============================
+  
+  // 新增：无痕图标快捷开关
+  const SwitchModel(
+    title: '动态页显示无痕图标',
+    subtitle: '在动态页顶栏快捷切换无痕模式',
+    leading: Icon(MdiIcons.incognito),
+    setKey: SettingBoxKey.showIncognitoInDynamics,
+    defaultVal: false,
+    needReboot: true, // <--- 提示重启生效
+  ),
+  // 无痕图标位置设置
+  NormalModel(
+    title: '无痕图标显示位置',
+    leading: const Icon(Icons.format_align_left),
+    getSubtitle: () =>
+        '当前：${Pref.incognitoOnLeft ? '左侧' : '右侧'}（在原有按钮的内侧）',
+    onTap: (context, setState) async {
+      final res = await showDialog<bool>(
+        context: context,
+        builder: (context) => SelectDialog<bool>(
+          title: '选择显示位置',
+          value: Pref.incognitoOnLeft,
+          values: const [
+            (true, '左侧'),
+            (false, '右侧'),
+          ],
+        ),
+      );
+      if (res != null && res != Pref.incognitoOnLeft) { // 只有真改变了才提示
+        await GStorage.setting.put(SettingBoxKey.incognitoOnLeft, res);
+        setState();
+        SmartDialog.showToast('重启生效'); // <--- 提示重启生效
+      }
+    },
+  ),
+
   NormalModel(
     onTap: (context, setState) => Get.toNamed(
       '/barSetting',

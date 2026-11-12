@@ -37,9 +37,14 @@ class DynamicsController
 
   DynamicsTabController? get controller {
     try {
-      return Get.find<DynamicsTabController>(
-        tag: DynamicsTabType.values[tabController.index].name,
-      );
+      // 动态读取当前用户配置的标签列表
+      final tabs = Pref.dynamicsTabs;
+      if (tabController.index >= 0 && tabController.index < tabs.length) {
+        return Get.find<DynamicsTabController>(
+          tag: tabs[tabController.index].name,
+        );
+      }
+      return null;
     } catch (_) {
       return null;
     }
@@ -48,16 +53,34 @@ class DynamicsController
   @override
   void onInit() {
     super.onInit();
+    final tabs = Pref.dynamicsTabs;
+    int initialIndex = Pref.defaultDynamicTypeIndex;
+    
+    // 越界保护：如果默认索引超出了当前显示的标签长度，回退到 0
+    if (initialIndex >= tabs.length) {
+      initialIndex = 0;
+    }
+
     tabController = TabController(
       vsync: this,
-      length: DynamicsTabType.values.length,
-      initialIndex: Pref.defaultDynamicTypeIndex,
+      length: tabs.length, // 动态长度
+      initialIndex: initialIndex,
     );
     queryData();
   }
 
   void _jumpToTab(int mid) {
-    tabController.index = mid == -1 ? 0 : 4;
+    if (mid == -1) {
+      // 跳转到“全部”标签（通常是第一个）
+      tabController.index = 0;
+    } else {
+      // 动态查找“UP主”标签的索引
+      final tabs = Pref.dynamicsTabs;
+      final upIndex = tabs.indexOf(DynamicsTabType.up);
+      if (upIndex != -1) {
+        tabController.index = upIndex;
+      }
+    }
   }
 
   void onSelectUp(int mid) {
