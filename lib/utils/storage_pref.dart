@@ -1157,8 +1157,10 @@ abstract final class Pref {
   static bool get cachePlayInfo =>
       _setting.get(SettingBoxKey.cachePlayInfo, defaultValue: true);
 
+
   static bool get enableDebugDialog =>
       _setting.get(SettingBoxKey.enableDebugDialog, defaultValue: false);
+
 
   // 动态页显示无痕图标
   static bool get showIncognitoInDynamics =>
@@ -1167,4 +1169,9 @@ abstract final class Pref {
   // 无痕图标显示位置（左侧或右侧）
   static bool get incognitoOnLeft =>
       _setting.get(SettingBoxKey.incognitoOnLeft, defaultValue: true);
+
+  static bool get autoWearMedal =>
+      _setting.get(SettingBoxKey.autoWearMedal, defaultValue: false);
+
+
 }
