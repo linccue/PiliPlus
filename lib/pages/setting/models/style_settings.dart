@@ -423,6 +423,18 @@ List<SettingsModel> get styleSettings => [
     setKey: SettingBoxKey.showIncognitoInDynamics,
     defaultVal: false,
   ),
+      PopupModel<String>(
+    title: '无痕图标显示位置',
+    subtitle: '在原有按钮的内侧',
+    leading: const Icon(Icons.format_align_left),
+    value: () => Pref.incognitoOnLeft ? '左侧' : '右侧',
+    items: const ['左侧', '右侧'],
+    onSelected: (value, setState) {
+      GStorage.setting
+          .put(SettingBoxKey.incognitoOnLeft, value == '左侧')
+          .whenComplete(setState);
+    },
+  ),
   NormalModel(
     onTap: (context, setState) => Get.toNamed(
       '/barSetting',
