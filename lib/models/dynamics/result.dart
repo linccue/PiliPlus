@@ -1,8 +1,10 @@
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamics_type.dart';
-import 'package:PiliPlus/models/dynamics/article_content_model.dart';
+import 'package:PiliPlus/models/dynamics/article_content_model.dart' hide Text;
 import 'package:PiliPlus/models/model_avatar.dart';
 import 'package:PiliPlus/models/model_owner.dart';
 import 'package:PiliPlus/models_new/live/live_feed_index/watched_show.dart';
@@ -47,6 +49,97 @@ class DynamicsDataModel {
 
   static bool antiGoodsDyn = Pref.antiGoodsDyn;
 
+  // 1. 无权查看 / 充电专属（含“抢先看”预览）
+  static bool _isInaccessibleDyn(DynamicItemModel item) {
+    // 优先检查视频卡片的充电字段：未付费用户 isUpowerPlay 为 false，
+    // 同时覆盖“充电专属”与“抢先看”两种角标
+    final archive = item.modules.moduleDynamic?.major?.archive;
+    if (archive != null) {
+      if (archive.isUpowerExclusive == true && archive.isUpowerPlay != true) {
+        return true;
+      }
+      if (archive.isUpowerPreview == true) {
+        return true;
+      }
+      final badgeText = archive.badge?.text;
+      if (badgeText != null &&
+          (badgeText.contains('充电') ||
+              badgeText.contains('专属') ||
+              badgeText.contains('抢先看'))) {
+        return true;
+      }
+    }
+
+    // 顶层类型
+    final type = item.type;
+    if (type == 'DYNAMIC_TYPE_SUBSCRIPTION' ||
+        type == 'DYNAMIC_TYPE_SUBSCRIPTION_NEW') {
+      return true;
+    }
+
+    // 不可见 / 被屏蔽的占位卡片
+    if (item.visible == false) return true;
+    if (item.modules.moduleBlocked?.blockedType == 3) return true;
+
+    // major 卡片类型
+    final major = item.modules.moduleDynamic?.major;
+    if (major != null) {
+      if (major.type == 'MAJOR_TYPE_SUBSCRIPTION' ||
+          major.type == 'MAJOR_TYPE_SUBSCRIPTION_NEW' ||
+          major.type == 'MAJOR_TYPE_UPOWER_COMMON') {
+        return true;
+      }
+      if (major.blocked != null || major.subscriptionNew != null) return true;
+    }
+
+    // 充电专属抽奖卡片
+    final additional = item.modules.moduleDynamic?.additional;
+    if (additional?.type == 'ADDITIONAL_TYPE_UPOWER_LOTTERY') return true;
+    if (additional?.upowerLottery != null) return true;
+
+    // 如果是转发，递归检查原动态
+    if (item.orig != null && _isInaccessibleDyn(item.orig!)) return true;
+
+    return false;
+  }
+
+  // 2. 跳转广告
+  static bool _isAdJumpDyn(DynamicItemModel item) {
+    final type = item.type;
+    return type == 'DYNAMIC_TYPE_AD' || type == 'DYNAMIC_TYPE_BANNER';
+  }
+
+  // 3. 直播预约 / 直播推荐
+  static bool _isLiveReminderDyn(DynamicItemModel item) {
+    final type = item.type;
+    if (type == 'DYNAMIC_TYPE_LIVE' || type == 'DYNAMIC_TYPE_LIVE_RCMD') {
+      return true;
+    }
+    final major = item.modules.moduleDynamic?.major;
+    if (major?.liveRcmd != null) return true;
+    if (major?.live != null) return true;
+    if (major?.subscriptionNew?.liveRcmd != null) return true;
+    if (item.modules.moduleDynamic?.additional?.reserve != null) return true;
+    return false;
+  }
+
+  // 4. 推广（乱序、无投稿时间）；保留视频合集
+  static bool _isPromotedDyn(DynamicItemModel item) {
+    final type = item.type;
+    if (type == 'DYNAMIC_TYPE_COMMON_SQUARE') {
+      return true;
+    }
+    final additional = item.modules.moduleDynamic?.additional;
+    if (additional?.common != null) return true;
+    if (additional?.match != null) return true;
+    return false;
+  }
+
+  // 5. 屏蔽转发动态
+  static bool _isForwardDyn(DynamicItemModel item) {
+    return item.type == 'DYNAMIC_TYPE_FORWARD';
+  }
+
   DynamicsDataModel.fromJson(
     Map<String, dynamic> json, {
     DynamicsTabType type = DynamicsTabType.all,
@@ -54,18 +147,69 @@ class DynamicsDataModel {
   }) {
     hasMore = json['has_more'];
 
+    final blockInaccessible = Pref.blockInaccessibleDynamics;
+    final blockAdJump = Pref.blockAdJumpDynamics;
+    final blockLiveReminder = Pref.blockLiveReminderDynamics;
+    final blockPromoted = Pref.blockPromotedDynamics;
+    final blockForward = Pref.blockForwardDynamics;
+
     List? list = json['items'] as List?;
     if (list != null && list.isNotEmpty) {
+      final debugBuffer = StringBuffer();
       items = <DynamicItemModel>[];
       late final filterBan =
           type != DynamicsTabType.up && tempBannedList?.isNotEmpty == true;
       for (final e in list) {
         DynamicItemModel item = DynamicItemModel.fromJson(e);
+        // ===== 临时调试：收集充电相关动态的字段 =====
+        final dbgArchive = item.modules.moduleDynamic?.major?.archive;
+        if (dbgArchive != null &&
+            (dbgArchive.badge?.text?.contains('抢先看') == true ||
+                dbgArchive.badge?.text?.contains('充电') == true ||
+                dbgArchive.isUpowerExclusive != null ||
+                dbgArchive.isUpowerPlay != null)) {
+          debugBuffer.writeln('type: ${item.type}');
+          debugBuffer.writeln(
+              'majorType: ${item.modules.moduleDynamic?.major?.type}');
+          debugBuffer.writeln('exclusive: ${dbgArchive.isUpowerExclusive}');
+          debugBuffer.writeln('preview: ${dbgArchive.isUpowerPreview}');
+          debugBuffer.writeln('play: ${dbgArchive.isUpowerPlay}');
+          debugBuffer.writeln('badge: ${dbgArchive.badge?.text}');
+          debugBuffer.writeln('title: ${dbgArchive.title}');
+          debugBuffer.writeln('---');
+        }
+                if (kDebugMode) {
+          final a = item.modules.moduleDynamic?.major?.archive;
+          print(
+            '动态检查: type=${item.type}, '
+            'majorType=${item.modules.moduleDynamic?.major?.type}, '
+            'exclusive=${a?.isUpowerExclusive}, '
+            'preview=${a?.isUpowerPreview}, '
+            'play=${a?.isUpowerPlay}, '
+            'badge=${a?.badge?.text}, '
+            'title=${a?.title}',
+          );
+        }
         if (antiGoodsDyn &&
             (item.orig?.modules.moduleDynamic?.additional?.type ==
                     'ADDITIONAL_TYPE_GOODS' ||
                 item.modules.moduleDynamic?.additional?.type ==
                     'ADDITIONAL_TYPE_GOODS')) {
+          continue;
+        }
+        if (blockInaccessible && _isInaccessibleDyn(item)) {
+          continue;
+        }
+        if (blockAdJump && _isAdJumpDyn(item)) {
+          continue;
+        }
+        if (blockLiveReminder && _isLiveReminderDyn(item)) {
+          continue;
+        }
+        if (blockPromoted && _isPromotedDyn(item)) {
+          continue;
+        }
+        if (blockForward && _isForwardDyn(item)) {
           continue;
         }
         if (enableFilter) {
@@ -85,6 +229,27 @@ class DynamicsDataModel {
         items!.add(item);
       }
       // filtered all
+       // ===== 临时调试：弹窗显示收集到的字段 =====
+       if (Pref.enableDebugDialog && debugBuffer.isNotEmpty) { 
+        SmartDialog.show(
+          builder: (context) => AlertDialog(
+            title: const Text('充电视频调试信息'),
+            content: SingleChildScrollView(
+              child: SelectableText(
+                debugBuffer.toString(),
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: SmartDialog.dismiss,
+                child: const Text('关闭'),
+              ),
+            ],
+          ),
+        );
+      }
+      // ===== 临时调试结束 =====
       if (items!.isEmpty) {
         loadNext = hasMore;
       }
@@ -158,18 +323,15 @@ class ItemModulesModel {
 
   ModuleAuthorModel? moduleAuthor;
   ModuleStatModel? moduleStat;
-  ModuleTag? moduleTag; // 也做opus的title用
+  ModuleTag? moduleTag;
 
-  // 动态
   ModuleDynamicModel? moduleDynamic;
-  // ModuleInterModel? moduleInter;
   ModuleInteraction? moduleInteraction;
   ModuleDispute? moduleDispute;
 
-  // 专栏
   ModuleTop? moduleTop;
   ModuleCollection? moduleCollection;
-  List<ModuleTag>? moduleExtend; // opus的tag
+  List<ModuleTag>? moduleExtend;
   List<ArticleContentModel>? moduleContent;
   ModuleBlocked? moduleBlocked;
   ModuleFold? moduleFold;
@@ -465,7 +627,7 @@ class ModuleAuthorModel extends Avatar {
 
   ModuleAuthorModel.fromJson(Map<String, dynamic> json) : super.fromJson(json) {
     if (json['official'] != null) {
-      officialVerify ??= BaseOfficialVerify.fromJson(json['official']); // opus
+      officialVerify ??= BaseOfficialVerify.fromJson(json['official']);
     }
     pubAction = json['pub_action'];
     pubTime = nonNullOrEmptyString(json['pub_time']);
@@ -1109,11 +1271,17 @@ class DynamicArchiveModel {
     this.type,
     this.epid,
     this.seasonId,
+    this.isUpowerExclusive,
+    this.isUpowerPreview,
+    this.isUpowerPlay,
   });
 
   int? id;
   int? aid;
   Badge? badge;
+  bool? isUpowerExclusive;
+  bool? isUpowerPreview;
+  bool? isUpowerPlay;
   String? bvid;
   String? cover;
   String? durationText;
@@ -1125,6 +1293,9 @@ class DynamicArchiveModel {
   int? seasonId;
 
   DynamicArchiveModel.fromJson(Map<String, dynamic> json) {
+    isUpowerExclusive = json['is_upower_exclusive'] as bool?;
+    isUpowerPreview = json['is_upower_preview'] as bool?;
+    isUpowerPlay = json['is_upower_play'] as bool?;
     id = safeToInt(json['id']);
     aid = safeToInt(json['aid']);
     badge = json['badge'] == null ? null : Badge.fromJson(json['badge']);

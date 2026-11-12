@@ -1,6 +1,12 @@
 // ignore_for_file: constant_identifier_names
 
 abstract final class SettingBoxKey {
+    static const enableDebugDialog = 'enableDebugDialog';
+  static const blockInaccessibleDynamics = 'blockInaccessibleDynamics';
+static const blockAdJumpDynamics = 'blockAdJumpDynamics';
+static const blockLiveReminderDynamics = 'blockLiveReminderDynamics';
+static const blockPromotedDynamics = 'blockPromotedDynamics';
+    static const blockForwardDynamics = 'blockForwardDynamics';
   static const String btmProgressBehavior = 'btmProgressBehavior',
       defaultVideoQa = 'defaultVideoQa',
       defaultVideoQaCellular = 'defaultVideoQaCellular',
