@@ -1163,4 +1163,9 @@ abstract final class Pref {
   // 新增：动态页显示无痕图标
    static bool get incognitoOnLeft =>
       _setting.get(SettingBoxKey.incognitoOnLeft, defaultValue: true);
+      static bool get showIncognitoInDynamics =>
+      _setting.get(SettingBoxKey.showIncognitoInDynamics, defaultValue: false);
+
+  static bool get incognitoOnLeft =>
+      _setting.get(SettingBoxKey.incognitoOnLeft, defaultValue: true);
 }
