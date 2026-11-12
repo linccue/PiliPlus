@@ -4,7 +4,6 @@ abstract final class SettingBoxKey {
       static const dynamicsTabs = 'dynamicsTabs';
         static const incognitoOnLeft = 'incognitoOnLeft';
     static const enableDebugDialog = 'enableDebugDialog';
-      static const incognitoOnLeft = 'incognitoOnLeft';
   static const blockInaccessibleDynamics = 'blockInaccessibleDynamics';
 static const blockAdJumpDynamics = 'blockAdJumpDynamics';
 static const blockLiveReminderDynamics = 'blockLiveReminderDynamics';
