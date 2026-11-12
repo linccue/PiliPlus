@@ -1144,6 +1144,11 @@ abstract final class Pref {
   static bool get cachePlayInfo =>
       _setting.get(SettingBoxKey.cachePlayInfo, defaultValue: true);
 
+
   static bool get enableDebugDialog =>
       _setting.get(SettingBoxKey.enableDebugDialog, defaultValue: false);
+
+  static bool get autoWearMedal =>
+      _setting.get(SettingBoxKey.autoWearMedal, defaultValue: false);
+
 }
