@@ -1159,4 +1159,8 @@ abstract final class Pref {
 
   static bool get enableDebugDialog =>
       _setting.get(SettingBoxKey.enableDebugDialog, defaultValue: false);
+
+  // 新增：动态页显示无痕图标
+  static bool get showIncognitoInDynamics =>
+      _setting.get(SettingBoxKey.showIncognitoInDynamics, defaultValue: false);
 }
