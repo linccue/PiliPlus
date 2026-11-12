@@ -1161,6 +1161,6 @@ abstract final class Pref {
       _setting.get(SettingBoxKey.enableDebugDialog, defaultValue: false);
 
   // 新增：动态页显示无痕图标
-  static bool get showIncognitoInDynamics =>
-      _setting.get(SettingBoxKey.showIncognitoInDynamics, defaultValue: false);
+   static bool get incognitoOnLeft =>
+      _setting.get(SettingBoxKey.incognitoOnLeft, defaultValue: true);
 }
