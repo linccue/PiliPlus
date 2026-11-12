@@ -423,15 +423,16 @@ List<SettingsModel> get styleSettings => [
     setKey: SettingBoxKey.showIncognitoInDynamics,
     defaultVal: false,
   ),
-      PopupModel<String>(
+      // 替换为你现在的这段：
+  PopupModel<bool>(
     title: '无痕图标显示位置',
-    subtitle: '在原有按钮的内侧',
     leading: const Icon(Icons.format_align_left),
-    value: () => Pref.incognitoOnLeft ? '左侧' : '右侧',
-    items: const ['左侧', '右侧'],
+    getSubtitle: () => '当前：${Pref.incognitoOnLeft ? '左侧' : '右侧'}（在原有按钮的内侧）',
+    value: () => Pref.incognitoOnLeft,
+    items: const [true, false], // true 为左侧，false 为右侧
     onSelected: (value, setState) {
       GStorage.setting
-          .put(SettingBoxKey.incognitoOnLeft, value == '左侧')
+          .put(SettingBoxKey.incognitoOnLeft, value)
           .whenComplete(setState);
     },
   ),
