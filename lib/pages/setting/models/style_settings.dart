@@ -423,6 +423,7 @@ List<SettingsModel> get styleSettings => [
     leading: Icon(MdiIcons.incognito),
     setKey: SettingBoxKey.showIncognitoInDynamics,
     defaultVal: false,
+    needReboot: true, // <--- 提示重启生效
   ),
   // 无痕图标位置设置
   NormalModel(
@@ -442,9 +443,10 @@ List<SettingsModel> get styleSettings => [
           ],
         ),
       );
-      if (res != null) {
+      if (res != null && res != Pref.incognitoOnLeft) { // 只有真改变了才提示
         await GStorage.setting.put(SettingBoxKey.incognitoOnLeft, res);
         setState();
+        SmartDialog.showToast('重启生效'); // <--- 提示重启生效
       }
     },
   ),
