@@ -415,6 +415,14 @@ List<SettingsModel> get styleSettings => [
     leading: const Icon(Icons.toc_outlined),
   ),
   // ===============================
+      // 新增：无痕图标快捷开关
+  const SwitchModel(
+    title: '动态页显示无痕图标',
+    subtitle: '在动态页顶栏快捷切换无痕模式',
+    leading: Icon(MdiIcons.incognito),
+    setKey: SettingBoxKey.showIncognitoInDynamics,
+    defaultVal: false,
+  ),
   NormalModel(
     onTap: (context, setState) => Get.toNamed(
       '/barSetting',
