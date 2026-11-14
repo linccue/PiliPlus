@@ -1025,5 +1025,6 @@ extension _PlayReatExt on PlayRepeat {
     PlayRepeat.singleCycle => Icons.play_circle_outline_rounded,
     PlayRepeat.listCycle => Icons.sync_rounded,
     PlayRepeat.autoPlayRelated => throw UnimplementedError(),
+    PlayRepeat.custom => Icons.pause_rounded, // <--- 新增这一行
   };
 }
