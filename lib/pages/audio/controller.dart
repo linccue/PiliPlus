@@ -18,6 +18,7 @@ import 'package:PiliPlus/http/browser_ua.dart';
 import 'package:PiliPlus/http/constants.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/audio_normalization.dart';
+import 'package:PiliPlus/models/common/video/source_type.dart'; // <--- 新增
 import 'package:PiliPlus/models/video/play/url.dart' as http_model show Volume;
 import 'package:PiliPlus/pages/common/common_intro_controller.dart'
     show FavMixin;
@@ -98,6 +99,24 @@ class AudioController extends GetxController
   }
 
   late final Rx<PlayRepeat> playMode = Pref.audioPlayMode.obs;
+
+  // ===== 新增：获取实际生效的播放模式 =====
+  PlayRepeat get actualPlayMode {
+    if (playMode.value == PlayRepeat.custom) {
+      bool isWatchLater = false;
+      if (_videoDetailController?.sourceType == SourceType.watchLater) {
+        isWatchLater = true;
+      } else if (from.name.toUpperCase().contains('WATCH')) {
+        isWatchLater = true;
+      }
+
+      if (isWatchLater) {
+        return PlayRepeat.listOrder;
+      }
+      return PlayRepeat.pause;
+    }
+    return playMode.value;
+  }
 
   @override
   late final isLogin = Accounts.main.isLogin;
@@ -465,9 +484,9 @@ class AudioController extends GetxController
           if (shutdownTimerService.isWaiting) {
             shutdownTimerService.handleWaiting();
           } else {
-            switch (playMode.value) {
+            switch (actualPlayMode) { // <--- 替换这里
               case PlayRepeat.pause:
-              case PlayRepeat.custom: // <--- 新增这一行，等同于暂停
+              case PlayRepeat.custom:
                 break;
               case PlayRepeat.listOrder:
                 playNext(nextPart: true);
