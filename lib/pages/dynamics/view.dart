@@ -114,6 +114,8 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   Widget build(BuildContext context) {
     super.build(context);
     final colorScheme = ColorScheme.of(context);
+    // 获取状态栏高度，替代原生 appBar 自动处理的 SafeArea
+    final topPadding = MediaQuery.paddingOf(context).top;
 
     Widget? drawer;
     Widget? endDrawer;
@@ -194,73 +196,68 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       backgroundColor: Colors.transparent,
       drawer: drawer,
       endDrawer: endDrawer,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(_hideAppBar ? 0 : 50),
-        child: AnimatedContainer(
-          // 使用更平滑的曲线让高度收缩更自然
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOutCubic,
-          height: _hideAppBar ? 0 : 50,
-          child: AnimatedOpacity(
-            // 配合透明度渐变，消除内容瞬间被裁切的割裂感
-            duration: const Duration(milliseconds: 200),
-            opacity: _hideAppBar ? 0.0 : 1.0,
+      // 去掉原生的 appBar，改为在 body 里的 Column 布局，彻底消除高度突变
+      body: Column(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic, // 使用平滑的过渡曲线
+            height: _hideAppBar ? 0 : topPadding + 50, // 将状态栏高度和顶栏高度一起收缩
             child: ClipRect(
-              child: OverflowBox(
-                minHeight: 50,
-                maxHeight: 50,
-                alignment: Alignment.bottomCenter,
-                child: Row(
-                  children: [
-                    ?leading,
-                    Expanded(
-                      child: TabBar(
-                        dividerHeight: 0,
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.center,
-                        dividerColor: Colors.transparent,
-                        labelColor: colorScheme.primary,
-                        indicatorColor: colorScheme.primary,
-                        controller: _dynamicsController.tabController,
-                        unselectedLabelColor: colorScheme.onSurface,
-                        labelStyle:
-                            TabBarTheme.of(context).labelStyle?.copyWith(
-                                  fontSize: 13,
-                                ) ??
-                                const TextStyle(fontSize: 13),
-                        tabs: tabTypes.map((e) => Tab(text: e.label)).toList(),
-                        onTap: (index) {
-                          if (!_dynamicsController.tabController.indexIsChanging) {
-                            _dynamicsController.animateToTop();
-                          }
-                        },
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _hideAppBar ? 0.0 : 1.0, // 高度收缩的同时淡出内容
+                child: OverflowBox(
+                  minHeight: topPadding + 50,
+                  maxHeight: topPadding + 50,
+                  alignment: Alignment.bottomCenter,
+                  child: Column(
+                    children: [
+                      // 手动填充状态栏的高度
+                      SizedBox(height: topPadding),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            ?leading,
+                            Expanded(
+                              child: TabBar(
+                                dividerHeight: 0,
+                                isScrollable: true,
+                                tabAlignment: TabAlignment.center,
+                                dividerColor: Colors.transparent,
+                                labelColor: colorScheme.primary,
+                                indicatorColor: colorScheme.primary,
+                                controller: _dynamicsController.tabController,
+                                unselectedLabelColor: colorScheme.onSurface,
+                                labelStyle: TabBarTheme.of(context)
+                                        .labelStyle
+                                        ?.copyWith(fontSize: 13) ??
+                                    const TextStyle(fontSize: 13),
+                                tabs: tabTypes
+                                    .map((e) => Tab(text: e.label))
+                                    .toList(),
+                                onTap: (index) {
+                                  if (!_dynamicsController
+                                      .tabController.indexIsChanging) {
+                                    _dynamicsController.animateToTop();
+                                  }
+                                },
+                              ),
+                            ),
+                            actions,
+                          ],
+                        ),
                       ),
-                    ),
-                    actions,
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (checkPage) return false;
-          if (notification is ScrollUpdateNotification) {
-            final delta = notification.scrollDelta ?? 0;
-            // 向下滑动（看新内容），隐藏顶栏
-            if (delta > 0 && !_hideAppBar && notification.metrics.pixels > 0) {
-              setState(() => _hideAppBar = true);
-            } 
-            // 向上滑动（看历史），显示顶栏
-            else if (delta < 0 && _hideAppBar) {
-              setState(() => _hideAppBar = false);
-            }
-          }
-          return false;
-        },
-        child: onBuild(child),
+          Expanded(
+            child: onBuild(child),
+          ),
+        ],
       ),
     );
   }
