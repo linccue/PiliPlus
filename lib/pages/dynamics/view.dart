@@ -172,7 +172,6 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       });
 
       if (Pref.incognitoOnLeft) {
-        // 如果设置显示在左侧：放在 leading 的右边
         if (leading != null) {
           leading = Row(
             mainAxisSize: MainAxisSize.min,
@@ -182,14 +181,12 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           leading = incognitoBtn;
         }
       } else {
-        // 如果设置显示在右侧：放在 actions 的左边
         actions = Row(
           mainAxisSize: MainAxisSize.min,
           children: [incognitoBtn, actions],
         );
       }
     }
-    // ===========================
 
     return Scaffold(
       primary: false,
@@ -200,42 +197,48 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(_hideAppBar ? 0 : 50),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
+          // 使用更平滑的曲线让高度收缩更自然
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic,
           height: _hideAppBar ? 0 : 50,
-          child: ClipRect(
-            child: OverflowBox(
-              minHeight: 50,
-              maxHeight: 50,
-              alignment: Alignment.bottomCenter,
-              child: Row(
-                children: [
-                  ?leading,
-                  Expanded(
-                    child: TabBar(
-                      dividerHeight: 0,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.center,
-                      dividerColor: Colors.transparent,
-                      labelColor: colorScheme.primary,
-                      indicatorColor: colorScheme.primary,
-                      controller: _dynamicsController.tabController,
-                      unselectedLabelColor: colorScheme.onSurface,
-                      labelStyle:
-                          TabBarTheme.of(context).labelStyle?.copyWith(
-                                fontSize: 13,
-                              ) ??
-                              const TextStyle(fontSize: 13),
-                      tabs: tabTypes.map((e) => Tab(text: e.label)).toList(),
-                      onTap: (index) {
-                        if (!_dynamicsController.tabController.indexIsChanging) {
-                          _dynamicsController.animateToTop();
-                        }
-                      },
+          child: AnimatedOpacity(
+            // 配合透明度渐变，消除内容瞬间被裁切的割裂感
+            duration: const Duration(milliseconds: 200),
+            opacity: _hideAppBar ? 0.0 : 1.0,
+            child: ClipRect(
+              child: OverflowBox(
+                minHeight: 50,
+                maxHeight: 50,
+                alignment: Alignment.bottomCenter,
+                child: Row(
+                  children: [
+                    ?leading,
+                    Expanded(
+                      child: TabBar(
+                        dividerHeight: 0,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.center,
+                        dividerColor: Colors.transparent,
+                        labelColor: colorScheme.primary,
+                        indicatorColor: colorScheme.primary,
+                        controller: _dynamicsController.tabController,
+                        unselectedLabelColor: colorScheme.onSurface,
+                        labelStyle:
+                            TabBarTheme.of(context).labelStyle?.copyWith(
+                                  fontSize: 13,
+                                ) ??
+                                const TextStyle(fontSize: 13),
+                        tabs: tabTypes.map((e) => Tab(text: e.label)).toList(),
+                        onTap: (index) {
+                          if (!_dynamicsController.tabController.indexIsChanging) {
+                            _dynamicsController.animateToTop();
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                  actions,
-                ],
+                    actions,
+                  ],
+                ),
               ),
             ),
           ),
@@ -246,9 +249,12 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
           if (checkPage) return false;
           if (notification is ScrollUpdateNotification) {
             final delta = notification.scrollDelta ?? 0;
+            // 向下滑动（看新内容），隐藏顶栏
             if (delta > 0 && !_hideAppBar && notification.metrics.pixels > 0) {
               setState(() => _hideAppBar = true);
-            } else if (delta < 0 && _hideAppBar) {
+            } 
+            // 向上滑动（看历史），显示顶栏
+            else if (delta < 0 && _hideAppBar) {
               setState(() => _hideAppBar = false);
             }
           }
