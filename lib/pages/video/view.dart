@@ -263,7 +263,8 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       if (shutdownTimerService.isWaiting) {
         shutdownTimerService.handleWaiting();
       } else {
-        switch (plPlayerController!.playRepeat) {
+                // 使用我们在 VideoDetailController 里写好的自定义判断逻辑
+        switch (videoDetailController.effectivePlayRepeat) {
           case PlayRepeat.singleCycle:
             exitFlag = false;
             plPlayerController!.play(repeat: true);
@@ -272,6 +273,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
           case PlayRepeat.autoPlayRelated:
             exitFlag = !introController.nextPlay();
           case PlayRepeat.pause:
+          case PlayRepeat.custom: // 兜底，理论上不会走到这里，因为已经被转换了
         }
       }
 
