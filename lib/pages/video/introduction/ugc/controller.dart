@@ -633,7 +633,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     final currIndex = episodes.indexWhere((e) => e.cid == targetCid);
 
     int prevIndex = currIndex - 1;
-    final playRepeat = videoDetailCtr.plPlayerController.playRepeat;
+        final playRepeat = videoDetailCtr.effectivePlayRepeat;
 
     // 列表循环
     if (prevIndex < 0) {
@@ -685,8 +685,8 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         }
       }
 
-      final PlayRepeat playRepeat =
-          videoDetailCtr.plPlayerController.playRepeat;
+            final PlayRepeat playRepeat =
+          videoDetailCtr.effectivePlayRepeat;
 
       if (episodes.isEmpty) {
         if (playRepeat == PlayRepeat.listCycle) {
