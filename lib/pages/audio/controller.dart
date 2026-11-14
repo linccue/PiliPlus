@@ -467,6 +467,7 @@ class AudioController extends GetxController
           } else {
             switch (playMode.value) {
               case PlayRepeat.pause:
+              case PlayRepeat.custom: // <--- 新增这一行，等同于暂停
                 break;
               case PlayRepeat.listOrder:
                 playNext(nextPart: true);
