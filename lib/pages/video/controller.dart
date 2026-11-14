@@ -50,6 +50,7 @@ import 'package:PiliPlus/pages/video/widgets/header_control.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/data_source.dart';
 import 'package:PiliPlus/plugin/pl_player/models/heart_beat_type.dart';
+import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart'; // <--- 新增导入
 import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
 import 'package:PiliPlus/services/download/download_service.dart';
 import 'package:PiliPlus/utils/accounts.dart';
@@ -441,6 +442,19 @@ class VideoDetailController extends GetxController
 
     // ===== 尝试自动加载上次记忆的本地字幕 =====
     _autoLoadLocalSubtitle();
+  }
+
+  // ===== 新增：获取实际生效的播放模式 =====
+  PlayRepeat get effectivePlayRepeat {
+    final repeat = Pref.playRepeat;
+    if (repeat == PlayRepeat.custom) {
+      if (sourceType == SourceType.watchLater) {
+        return PlayRepeat.listOrder; // 稍后再看，顺序播放
+      } else {
+        return PlayRepeat.pause; // 其他来源，播完暂停
+      }
+    }
+    return repeat;
   }
 
   /// 记忆并自动加载用户手动选择的本地字幕
